@@ -1,0 +1,6 @@
+[submodule "final/BIG-Bench-Mistake"]
+	path = final/BIG-Bench-Mistake
+	url = https://github.com/WHGTyen/BIG-Bench-Mistake
+[submodule "mr-gsm8k/MR-GSM8K"]
+	path = mr-gsm8k/MR-GSM8K
+	url = https://github.com/jafber/MR-GSM8K.git

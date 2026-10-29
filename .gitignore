@@ -1,3 +1,6 @@
+# Don't be stupid
+*.env
+
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -8,3 +11,10 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Notebook stuff
+.ipynb_checkpoints
+
+*.pdf
+cache
+logs
