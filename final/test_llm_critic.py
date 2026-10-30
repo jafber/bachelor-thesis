@@ -8,10 +8,28 @@ from pathlib import Path
 from unittest.mock import patch
 
 import llm_critic
+import run_critic_experiment
 from llm_critic import Example, evaluate, logger, parse_response, prompt_for, random_answers, statistics
 
 
 class CriticTests(unittest.TestCase):
+    def mock_judge(self, factory):
+        class Judge:
+            def __init__(self, model_id, thinking, max_new_tokens, *, generation_kwargs):
+                config = dict(model_id=model_id, thinking=thinking, max_new_tokens=max_new_tokens,
+                              generation_kwargs=generation_kwargs)
+                self.backend = factory(config)
+
+            def generate_batch(self, prompts):
+                if hasattr(self.backend, "generate_batch"):
+                    return self.backend.generate_batch(prompts)
+                return [self.backend(prompt) for prompt in prompts]
+
+            def log_peak_memory(self):
+                pass
+
+        return patch.object(llm_critic, "LLMJudge", Judge)
+
     def setUp(self):
         self.mr = Example("MR-GSM8K", "original", "a", "1+1?", ("Step 1: 1+1=3", "Step 2: answer 3"), 0)
         self.pb = Example("ProcessBench", "math", "b", "1+1?", ("1+1=3", "answer 3"), 0)
@@ -37,14 +55,12 @@ class CriticTests(unittest.TestCase):
         def backend(config):
             configs.append(config)
             return lambda prompt: "Reasoning.\nFINAL: 1" if config["thinking"] else "FINAL: 1"
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, self.mock_judge(backend):
             path = Path(tmp) / "results.sqlite"
-            evaluate([self.mr], cache_path=path, backend_factory=backend, progress=False)
-            thinking = evaluate([self.mr], cache_path=path, thinking=True,
-                                backend_factory=backend, progress=False)
+            evaluate([self.mr], cache_path=path, progress=False)
+            thinking = evaluate([self.mr], cache_path=path, thinking=True, progress=False)
             changed = evaluate([self.mr], cache_path=path, thinking=True,
-                               generation_kwargs={"temperature": 0.6},
-                               backend_factory=backend, progress=False)
+                               generation_kwargs={"temperature": 0.6}, progress=False)
         self.assertEqual([config["max_new_tokens"] for config in configs], [128, 4096, 4096])
         self.assertEqual(configs[0]["generation_kwargs"], {"do_sample": False})
         self.assertEqual(configs[1]["generation_kwargs"]["temperature"], 1.0)
@@ -89,9 +105,9 @@ class CriticTests(unittest.TestCase):
         self.assertIsNone(examples[-1].ground_truth_answer)
         self.assertNotIn("Correct answer", prompt_for(examples[0]))
         self.assertNotIn("Correct answer", prompt_for(examples[1]))
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, self.mock_judge(lambda config: lambda prompt: "FINAL: 1"):
             results = evaluate([examples[0], examples[-1]], cache_path=Path(tmp) / "cache.sqlite",
-                               backend_factory=lambda config: lambda prompt: "FINAL: 1", progress=False)
+                               progress=False)
         with patch("sys.stdout", new_callable=io.StringIO) as out:
             random_answers(results, [examples[0], examples[-1]])
         output = out.getvalue()
@@ -111,14 +127,14 @@ class CriticTests(unittest.TestCase):
         logger.addHandler(handler)
         try:
             with tempfile.TemporaryDirectory() as tmp, patch.dict("sys.modules", {"ipykernel": object()}), \
-                    patch.object(tqdm.auto, "tqdm", side_effect=lambda examples, **kwargs: examples) as bar:
-                evaluate([self.mr, self.pb], cache_path=Path(tmp) / "results.sqlite",
-                         backend_factory=lambda config: lambda prompt: "FINAL: 1")
+                    patch.object(tqdm.auto, "tqdm", side_effect=lambda examples, **kwargs: examples) as bar, \
+                    self.mock_judge(lambda config: lambda prompt: "FINAL: 1"):
+                evaluate([self.mr, self.pb], cache_path=Path(tmp) / "results.sqlite")
                 bar.assert_called_once()
                 self.assertEqual(bar.call_args.kwargs["total"], 2)
             logs = output.getvalue()
             self.assertRegex(logs, r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} INFO")
-            self.assertIn("Loading backend", logs)
+            self.assertIn("Loading judge", logs)
             self.assertIn("Evaluation complete: 2 examples (cache hits=0, generated=2)", logs)
         finally:
             logger.removeHandler(handler)
@@ -134,21 +150,18 @@ class CriticTests(unittest.TestCase):
                 return ["FINAL: 1" if "Question 0\n" in prompt or "Question 3\n" in prompt
                         else "FINAL: 2" for prompt in prompts]
 
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, self.mock_judge(lambda config: Backend()):
             path = Path(tmp) / "results.sqlite"
-            evaluate([examples[0], examples[3]], cache_path=path,
-                     backend_factory=lambda config: Backend(), progress=False)
+            evaluate([examples[0], examples[3]], cache_path=path, progress=False)
             calls.clear()
-            result = evaluate(examples, cache_path=path, batch_size=3,
-                              backend_factory=lambda config: Backend(), progress=False)
+            result = evaluate(examples, cache_path=path, batch_size=3, progress=False)
             self.assertEqual([len(batch) for batch in calls], [3, 1])
             self.assertEqual([int(prompt.split("Question ")[1].splitlines()[0])
                               for batch in calls for prompt in batch], [1, 2, 4, 5])
             self.assertEqual(result.uid.tolist(), [str(i) for i in range(6)])
             self.assertEqual(result.prediction.tolist(), [0, 1, 1, 0, 1, 1])
             calls.clear()
-            cached = evaluate(examples, cache_path=path, cache_only=True,
-                              backend_factory=lambda config: self.fail("Loaded cached backend"), progress=False)
+            cached = evaluate(examples, cache_path=path, cache_only=True, progress=False)
             self.assertEqual(calls, [])
             self.assertEqual(result.transcript.tolist(), cached.transcript.tolist())
 
@@ -177,7 +190,7 @@ class CriticTests(unittest.TestCase):
                 self.kwargs = kwargs
                 return torch.tensor([[0, 11, 12, 21, 22], [11, 12, 13, 21, 22]])
 
-        judge = object.__new__(llm_critic.TransformersJudge)
+        judge = object.__new__(llm_critic.LLMJudge)
         judge.tokenizer = Tokenizer()
         judge.model = Model()
         judge.max_new_tokens = 128
@@ -192,7 +205,7 @@ class CriticTests(unittest.TestCase):
     def test_thinking_sampling_overrides_and_presence_penalty(self):
         import torch
 
-        judge = object.__new__(llm_critic.TransformersJudge)
+        judge = object.__new__(llm_critic.LLMJudge)
         judge.max_new_tokens = 4096
         judge.generation_kwargs = llm_critic.generation_kwargs_for(True, {"temperature": 0.6})
         kwargs = judge._generate_kwargs(3)
@@ -239,10 +252,9 @@ class CriticTests(unittest.TestCase):
 
     def test_cache_stores_full_transcript_and_example_identity(self):
         transcript = "<|im_start|>user\nQuestion<|im_end|>\n<|im_start|>assistant\nFINAL: 1<|im_end|>"
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, self.mock_judge(lambda config: lambda prompt: transcript):
             path = Path(tmp) / "cache.sqlite"
-            result = evaluate([self.mr], cache_path=path, progress=False,
-                              backend_factory=lambda config: lambda prompt: transcript)
+            result = evaluate([self.mr], cache_path=path, progress=False)
             with sqlite3.connect(path) as db:
                 columns = [row[1] for row in db.execute("PRAGMA table_info(responses)")]
                 self.assertNotIn("raw", columns)
@@ -268,19 +280,18 @@ class CriticTests(unittest.TestCase):
                     raise RuntimeError("batch generation failed")
                 return ["FINAL: 1" if i % 2 else "FINAL: NONE" for i in calls[-1]]
 
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, self.mock_judge(lambda config: Backend(fail=True)):
             path = Path(tmp) / "batched.sqlite"
             with self.assertRaisesRegex(RuntimeError, "batch generation failed"):
-                evaluate(examples, cache_path=path, batch_size=2,
-                         backend_factory=lambda config: Backend(fail=True), progress=False)
+                evaluate(examples, cache_path=path, batch_size=2, progress=False)
             self.assertEqual(calls, [[0, 1], [2, 3]])
             calls.clear()
-            resumed = evaluate(examples, cache_path=path, batch_size=2,
-                               backend_factory=lambda config: Backend(), progress=False)
+            with self.mock_judge(lambda config: Backend()):
+                resumed = evaluate(examples, cache_path=path, batch_size=2, progress=False)
             self.assertEqual(calls, [[2, 3], [4]])
             calls.clear()
-            single = evaluate(examples, cache_path=Path(tmp) / "single.sqlite", batch_size=1,
-                              backend_factory=lambda config: Backend(), progress=False)
+            with self.mock_judge(lambda config: Backend()):
+                single = evaluate(examples, cache_path=Path(tmp) / "single.sqlite", batch_size=1, progress=False)
             self.assertEqual(calls, [[i] for i in range(5)])
             self.assertEqual(resumed[["uid", "transcript", "parse_error"]].to_dict("records"),
                              single[["uid", "transcript", "parse_error"]].to_dict("records"))
@@ -301,7 +312,7 @@ class CriticTests(unittest.TestCase):
             def log_peak_memory(self):
                 reported.append(True)
 
-        with tempfile.TemporaryDirectory() as tmp, patch.object(llm_critic, "TransformersJudge", FakeJudge):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(llm_critic, "LLMJudge", FakeJudge):
             path = Path(tmp) / "results.sqlite"
             evaluate([self.mr], cache_path=path, progress=False)
             evaluate([self.mr], cache_path=path, progress=False, cache_only=True)
@@ -314,7 +325,7 @@ class CriticTests(unittest.TestCase):
     def test_peak_memory_format_without_gpu(self):
         import torch
 
-        judge = object.__new__(llm_critic.TransformersJudge)
+        judge = object.__new__(llm_critic.LLMJudge)
         judge.device = "cuda:0"
         output = io.StringIO()
         handler = logging.StreamHandler(output)
@@ -329,14 +340,27 @@ class CriticTests(unittest.TestCase):
         finally:
             logger.removeHandler(handler)
 
-    def test_batch_with_legacy_callable_backend(self):
-        calls = []
-        with tempfile.TemporaryDirectory() as tmp:
-            result = evaluate([self.mr, self.pb], cache_path=Path(tmp) / "results.sqlite", batch_size=2,
-                              backend_factory=lambda config: lambda prompt: calls.append(prompt) or "FINAL: 1",
-                              progress=False)
-        self.assertEqual(len(calls), 2)
-        self.assertEqual(result.prediction.tolist(), [0, 0])
+    def test_cli_selects_tasks_and_writes_csvs(self):
+        examples = [self.mr, self.pb, Example("ProcessBench", "math", "c", "2+2?", ("4",), None)]
+        tasks = {("MR-GSM8K", "original"): [self.mr], ("ProcessBench", "math"): examples[1:]}
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch.object(run_critic_experiment, "load_examples", return_value=tasks), \
+                patch.object(run_critic_experiment, "evaluate") as run:
+            path = Path(tmp) / "run" / "results.csv"
+            run.return_value = llm_critic.pd.DataFrame([
+                dict(benchmark="ProcessBench", task="math", uid="b", label=0, prediction=0,
+                     parse_error=None, transcript="FINAL: 1")])
+            run_critic_experiment.main(["--task", "ProcessBench/math", "--sample-size", "1",
+                                        "--seed", "42", "--batch-size", "2", "--cache-only",
+                                        "--results", str(path)])
+            self.assertEqual(len(run.call_args.args[0]), 1)
+            self.assertEqual(run.call_args.args[0][0].benchmark, "ProcessBench")
+            self.assertEqual(run.call_args.kwargs["batch_size"], 2)
+            self.assertTrue(run.call_args.kwargs["cache_only"])
+            self.assertTrue(path.exists())
+            self.assertTrue(path.with_name("results_statistics.csv").exists())
+            run_critic_experiment.main(["--results", str(path)])
+            self.assertEqual(run.call_args.args[0], examples)
 
     def test_resume_and_cache_only(self):
         calls = []
@@ -345,13 +369,13 @@ class CriticTests(unittest.TestCase):
                 calls.append(prompt)
                 return "FINAL: 1"
             return answer
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, self.mock_judge(backend):
             path = Path(tmp) / "results.sqlite"
             with self.assertRaisesRegex(RuntimeError, "Cache miss"):
                 evaluate([self.mr], cache_path=path, cache_only=True)
-            first = evaluate([self.mr], cache_path=path, backend_factory=backend)
+            first = evaluate([self.mr], cache_path=path)
             self.assertEqual(len(calls), 1)
-            both = evaluate([self.mr, self.pb], cache_path=path, backend_factory=backend)
+            both = evaluate([self.mr, self.pb], cache_path=path)
             self.assertEqual(len(calls), 2)
             evaluate([self.mr, self.pb], cache_path=path, cache_only=True)
             self.assertEqual(len(calls), 2)

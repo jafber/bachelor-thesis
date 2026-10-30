@@ -1,0 +1,13 @@
+benchmark,task,n,errors,unparseable,coverage,accuracy,error_accuracy,no_error_accuracy,f1,mcc
+MR-GSM8K,original,4,3,0,1.0,0.5,0.3333333333333333,1.0,0.8,0.5773502691896258
+MR-GSM8K,POT,4,1,0,1.0,0.5,1.0,0.3333333333333333,0.5,0.3333333333333333
+MR-GSM8K,reversed,4,1,0,1.0,0.5,1.0,0.3333333333333333,0.5,0.3333333333333333
+BIG-Bench-Mistake,dyck_languages,4,3,0,1.0,0.0,0.0,0.0,0.8571428571428571,0.0
+BIG-Bench-Mistake,logical_deduction,4,4,0,1.0,0.25,0.25,,1.0,0.0
+BIG-Bench-Mistake,multistep_arithmetic,4,4,0,1.0,0.0,0.0,,1.0,0.0
+BIG-Bench-Mistake,tracking_shuffled_objects,4,4,0,1.0,0.5,0.5,,0.6666666666666666,0.0
+BIG-Bench-Mistake,word_sorting,4,4,1,0.75,0.25,0.25,,1.0,0.0
+ProcessBench,gsm8k,4,2,0,1.0,1.0,1.0,1.0,1.0,1.0
+ProcessBench,math,4,0,1,0.75,0.25,,0.25,0.0,0.0
+ProcessBench,olympiadbench,4,2,1,0.75,0.5,0.5,0.5,1.0,1.0
+ProcessBench,omnimath,4,4,2,0.5,0.5,0.5,,1.0,0.0

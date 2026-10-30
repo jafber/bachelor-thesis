@@ -202,7 +202,7 @@ def cache_key(e, prompt, config):
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-class TransformersJudge:
+class LLMJudge:
     """Lazy GPU backend: not instantiated unless some response is missing."""
     def __init__(self, model_id, thinking, max_new_tokens, *, generation_kwargs=None):
         logger.info("Importing libraries for inference")
@@ -254,18 +254,50 @@ class TransformersJudge:
         # Keep the complete padded input and generation, including chat-template tokens.
         return self.tokenizer.batch_decode(outputs, skip_special_tokens=False)
 
-    def __call__(self, prompt):
-        return self.generate_batch([prompt])[0]
+def cached_responses(examples, cache, config, cache_only):
+    """Yield each example with its prompt, cache key, and cached transcript (if any)."""
+    for e in examples:
+        prompt = prompt_for(e)
+        key = cache_key(e, prompt, config)
+        transcript = cache.get(key)
+        if transcript is None and cache_only:
+            raise RuntimeError(f"Cache miss: {e.benchmark}/{e.task}/{e.uid} ({key})")
+        yield e, prompt, key, transcript
+
+
+class MissingResponseProcessor:
+    """Lazily generate and cache batches of missing responses."""
+    def __init__(self, cache, config):
+        self.cache, self.config = cache, config
+        self.judge = None
+
+    def process(self, pending):
+        if self.judge is None:
+            e = pending[0][1]
+            logger.info("Loading judge for first cache miss: %s/%s/%s", e.benchmark, e.task, e.uid)
+            config = self.config
+            self.judge = LLMJudge(config["model_id"], config["thinking"], config["max_new_tokens"],
+                                  generation_kwargs=config["generation_kwargs"])
+            logger.info("Judge ready")
+        prompts = [prompt for _, _, prompt, _ in pending]
+        transcripts = self.judge.generate_batch(prompts)
+        assert len(transcripts) == len(pending), "Backend returned incorrect number of transcripts"
+        for (_, e, _, key), transcript in zip(pending, transcripts):
+            self.cache.put(key, e, transcript, self.config)
+        return transcripts
+
+    def log_peak_memory(self):
+        if self.judge is not None:
+            self.judge.log_peak_memory()
 
 
 def evaluate(examples, *, model_id="Qwen/Qwen3.5-4B", thinking=False,
-             max_new_tokens=None, cache_path=ROOT / "cache" / "llm_critic.sqlite", backend_factory=None,
-             cache_only=False, backend_name="transformers", progress=None, batch_size=1,
+             max_new_tokens=None, cache_path=ROOT / "cache" / "llm_critic.sqlite",
+             cache_only=False, progress=None, batch_size=1,
              generation_kwargs=None):
     """Cache-first; missing entries cause lazy model load. No inference on complete reruns.
 
-    backend_factory(config) may supply a callable(prompt)->transcript, optionally
-    with generate_batch(prompts)->list[str]. Only cache misses are batched.
+    Only cache misses are batched.
     progress=None shows a tqdm bar in notebooks only; True/False overrides this.
     """
     if max_new_tokens is None:
@@ -274,10 +306,9 @@ def evaluate(examples, *, model_id="Qwen/Qwen3.5-4B", thinking=False,
     assert isinstance(batch_size, int) and batch_size > 0
     effective_generation_kwargs = generation_kwargs_for(thinking, generation_kwargs)
     config = dict(model_id=model_id, thinking=thinking,
-                  max_new_tokens=max_new_tokens, generation_kwargs=effective_generation_kwargs,
-                  backend=backend_name)
+                  max_new_tokens=max_new_tokens, generation_kwargs=effective_generation_kwargs)
     cache = ResponseCache(cache_path)
-    judge = None
+    processor = MissingResponseProcessor(cache, config)
     rows = []
     pending = []  # (row index, example, prompt, cache key)
     hits = misses = 0
@@ -299,21 +330,10 @@ def evaluate(examples, *, model_id="Qwen/Qwen3.5-4B", thinking=False,
                         hits + misses, total if total is not None else "?", hits, misses)
 
     def flush():
-        nonlocal judge, misses
+        nonlocal misses
         if not pending:
             return
-        if judge is None:
-            e = pending[0][1]
-            logger.info("Loading backend for first cache miss: %s/%s/%s", e.benchmark, e.task, e.uid)
-            judge = (backend_factory(config) if backend_factory else TransformersJudge(
-                model_id, thinking, max_new_tokens, generation_kwargs=effective_generation_kwargs))
-            logger.info("Backend ready")
-        prompts = [prompt for _, _, prompt, _ in pending]
-        transcripts = (judge.generate_batch(prompts) if hasattr(judge, "generate_batch")
-                       else [judge(prompt) for prompt in prompts])
-        assert len(transcripts) == len(pending), "Backend returned incorrect number of transcripts"
-        for (index, e, _, key), transcript in zip(pending, transcripts):
-            cache.put(key, e, transcript, config)
+        for (index, e, _, key), transcript in zip(pending, processor.process(pending)):
             record(index, e, key, transcript)
             misses += 1
             log_progress()
@@ -323,15 +343,10 @@ def evaluate(examples, *, model_id="Qwen/Qwen3.5-4B", thinking=False,
         if show_progress:
             from tqdm.auto import tqdm
             examples = tqdm(examples, total=total, desc="Evaluating", unit="example")
-        for e in examples:
-            prompt = prompt_for(e)
-            key = cache_key(e, prompt, config)
-            transcript = cache.get(key)
+        for e, prompt, key, transcript in cached_responses(examples, cache, config, cache_only):
             index = len(rows)
             rows.append(None)
             if transcript is None:
-                if cache_only:
-                    raise RuntimeError(f"Cache miss: {e.benchmark}/{e.task}/{e.uid} ({key})")
                 pending.append((index, e, prompt, key))
                 if len(pending) == batch_size:
                     flush()
@@ -343,8 +358,7 @@ def evaluate(examples, *, model_id="Qwen/Qwen3.5-4B", thinking=False,
         completed = True
     finally:
         cache.close()
-        if isinstance(judge, TransformersJudge):
-            judge.log_peak_memory()
+        processor.log_peak_memory()
         logger.info("Evaluation %s: %s examples (cache hits=%s, generated=%s)",
                     "complete" if completed else "interrupted", hits + misses, hits, misses)
     return pd.DataFrame(rows)

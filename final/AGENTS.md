@@ -5,6 +5,8 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 ## Directory overview
 
 - `llm_critic.py` — Loads benchmarks, prompts an LLM judge, caches responses, and computes evaluation statistics.
+- `run_critic_experiment.py` — CLI for cache-resumable benchmark runs, sampling/filtering, and CSV results/statistics (usable in SLURM jobs).
+- `slurm_jobs/` — SLURM scripts: `run_qwen35_4b_smoke.slurm` tests four examples per task; `run_qwen35_{4b,9b,27b}_full.slurm` run all examples in non-thinking mode.
 - `test_llm_critic.py` — Unit tests for prompts, parsing, caching, batching, and evaluation.
 - `benchmark-overview.ipynb` — Inspects the three benchmarks and their example traces and labels.
 - `llm-critic-demo.ipynb` — Runs and compares non-thinking and thinking first-error detection.
@@ -20,8 +22,12 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 
 ### Keep unit tests to a minimum
 
-The test file should be short enough to be human-readable. Just cover the most common use cases and pitfalls. No need to cover every possible execution path.
+As a rule of thumb, a module's tests should not be longer than the module itself. Just cover the most common use cases and pitfalls. No need to cover every possible execution path.
 
 ### Break the cache when making changes
 
 Don't bother writing migrations for the sqlite cache. Trust the user to replace the cache whenever breaking changes are made.
+
+### Never use nested functions
+
+Keep functions short. Don't nest.
