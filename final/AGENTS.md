@@ -4,17 +4,26 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 
 ## Directory overview
 
-- `llm_critic.py` — Loads benchmarks, prompts an LLM judge, caches responses, and computes evaluation statistics.
-- `run_critic_experiment.py` — CLI for cache-resumable benchmark runs, sampling/filtering, and CSV results/statistics (usable in SLURM jobs).
-- `slurm_jobs/` — SLURM scripts: `run_qwen35_4b_smoke.slurm` tests four examples per task; `run_qwen35_{4b,9b,27b}_full.slurm` run all examples in non-thinking mode.
-- `test_llm_critic.py` — Unit tests for prompts, parsing, caching, batching, and evaluation.
+- `run_experiment.py` — CLI with `llm_judge` and `dc_pmi` subcommands for cache-resumable benchmark runs and CSV results.
+- `experiment_setup/__init__.py` — Python package marker.
+- `experiment_setup/benchmarks.py` — Shared benchmark loading, formatting, sampling, and task selection.
+- `experiment_setup/experiment_cache.py` — Shared SQLite cache keys and resumable cache-first batch orchestration.
+- `experiment_setup/logging_setup.py` — Shared timestamped logging configuration for judge and DC-PMI runs.
+- `experiment_setup/llm_critic.py` — LLM judge prompting, generation, parsing, and evaluation statistics.
+- `experiment_setup/dc_pmi.py` — Teacher-forced likelihood scoring, token-step spans, DC-PMI/perplexity derivation, and AUC summaries.
+- `experiment_setup/plots.py` — Per-benchmark first-error ROC curves and pooled step-level AUCs.
+- `tests/__init__.py` — Test package marker.
+- `tests/test_llm_critic.py` — Judge and CLI regression tests.
+- `tests/test_dc_pmi.py` — DC-PMI, cache, and CLI tests.
+- `slurm_jobs/` — SLURM scripts: `llmcritic_qwen35_4b_smoke.slurm` and `dcpmi_qwen35_4b_smoke.slurm` test four examples per task; `llmcritic_qwen35_{4b,9b,27b}_full.slurm` and `dcpmi_qwen35_{4b,9b,27b}_full.slurm` run all examples using the `llm_judge` and `dc_pmi` subcommands, respectively.
 - `benchmark-overview.ipynb` — Inspects the three benchmarks and their example traces and labels.
 - `llm-critic-demo.ipynb` — Runs and compares non-thinking and thinking first-error detection.
+- `dc-pmi-demo.ipynb` — Samples four examples per task, scores with non-thinking Qwen3.5-4B, and plots per-benchmark ROC curves.
 - `mr-gsm8k-issue.ipynb` — Investigates invalid reference answers in MR-GSM8K reversed examples.
 - `prompts.ipynb` — Inspects a judge's full tokenized prompt and generated response.
 - `BIG-Bench-Mistake/` — Bundled benchmark JSONL data, README, license, and results image; `annotate_dyck_languages.py` annotates Dyck-language trace mistakes.
 - `papers/` — Benchmark paper PDFs and reading notes.
-- `cache/` — Generated SQLite response cache; `__pycache__/` — generated Python bytecode.
+- `cache/` — Generated SQLite response/likelihood caches; `__pycache__/` — generated Python bytecode.
 
 **Update this `AGENTS.md` whenever creating new files or deleting files in this directory or its subdirectories.**
 

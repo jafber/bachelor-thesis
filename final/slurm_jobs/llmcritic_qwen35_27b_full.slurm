@@ -9,14 +9,14 @@
 #SBATCH --mem=96G
 #SBATCH --time=48:00:00
 #SBATCH --chdir=/sc/home/jan.berndt/better-nli/final
-#SBATCH --output=logs/qwen35_27b_full_%j.log
+#SBATCH --output=logs/llmcritic_qwen35_27b_full_%j.log
 
-# sbatch slurm_jobs/run_qwen35_27b_full.slurm  (from final/)
+# sbatch slurm_jobs/llmcritic_qwen35_27b_full.slurm  (from final/)
 set -euo pipefail
 export TOKENIZERS_PARALLELISM=false
 export PYTHONUNBUFFERED=1
 
-exec /sc/home/jan.berndt/conda3/envs/better-nli/bin/python -u run_critic_experiment.py \
+exec /sc/home/jan.berndt/conda3/envs/better-nli/bin/python -u run_experiment.py llm_judge \
     --model Qwen/Qwen3.5-27B \
     --batch-size 1 \
     --results runs/qwen35_27b_full.csv

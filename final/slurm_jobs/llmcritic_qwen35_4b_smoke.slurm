@@ -9,16 +9,16 @@
 #SBATCH --mem=32G
 #SBATCH --time=02:00:00
 #SBATCH --chdir=/sc/home/jan.berndt/better-nli/final
-#SBATCH --output=logs/qwen35_4b_smoke_%j.log
+#SBATCH --output=logs/llmcritic_qwen35_4b_smoke_%j.log
 
 # run from final/
-# sbatch slurm_jobs/run_qwen35_4b_smoke.slurm
+# sbatch slurm_jobs/llmcritic_qwen35_4b_smoke.slurm
 
 set -euo pipefail
 export TOKENIZERS_PARALLELISM=false
 export PYTHONUNBUFFERED=1
 
-exec /sc/home/jan.berndt/conda3/envs/better-nli/bin/python -u run_critic_experiment.py \
+exec /sc/home/jan.berndt/conda3/envs/better-nli/bin/python -u run_experiment.py llm_judge \
     --model Qwen/Qwen3.5-4B \
     --sample-size 4 \
     --batch-size 16 \
