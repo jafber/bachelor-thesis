@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# From anywhere: final/start_jobs smoke|small|full [llm_judge|dc_pmi|both]
+# Submits one independent SLURM job per method/model combination; never uses arrays.
+set -euo pipefail
+
+if (( $# < 1 || $# > 2 )); then
+    echo "Usage: $0 smoke|small|full [llm_judge|dc_pmi|both]" >&2
+    exit 2
+fi
+case "$1" in
+    smoke) models=(4b); sample_size=4; time=00:30:00 ;;
+    small) models=(4b 9b 27b); sample_size=100; time=08:00:00 ;;
+    full) models=(4b 9b 27b); sample_size=; time=36:00:00 ;;
+    *) echo "Unknown run size: $1 (expected smoke, small, or full)" >&2; exit 2 ;;
+esac
+size=$1
+case "${2:-both}" in
+    llm_judge) methods=(llm_judge) ;;
+    dc_pmi) methods=(dc_pmi) ;;
+    both) methods=(llm_judge dc_pmi) ;;
+    *) echo "Unknown method: $2 (expected llm_judge, dc_pmi, or both)" >&2; exit 2 ;;
+esac
+
+command -v sbatch >/dev/null || { echo "sbatch not found" >&2; exit 1; }
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+mkdir -p "$root/logs"
+python=/sc/home/jan.berndt/conda3/envs/better-nli/bin/python
+
+for model in "${models[@]}"; do
+    case "$model" in
+        4b) gpu_mem=40GB; ram=32G; batch_size=4 ;;
+        9b) gpu_mem=40GB; ram=48G; batch_size=2 ;;
+        27b) gpu_mem=80GB; ram=96G; batch_size=1 ;;
+    esac
+    for method in "${methods[@]}"; do
+        args=("$python" -u run_experiment.py "$method"
+              --model "Qwen/Qwen3.5-${model^^}"
+              --batch-size "$batch_size"
+              --cache "cache/${method}_qwen35_${model}.sqlite"
+              --results "runs/${method}_qwen35_${model}_${size}.csv")
+        if [[ -n "$sample_size" ]]; then args+=(--sample-size "$sample_size" --seed 42); fi
+        printf -v command_line '%q ' "${args[@]}"
+
+        sbatch --job-name="qwen35-${model}-${method}-${size}" \
+            --account=sci-demelo --partition=pot-hpi-gpu-batch \
+            --constraint="ARCH:X86&GPU_MEM:${gpu_mem}" \
+            --gpus=1 --nodes=1 --cpus-per-task=4 --mem="$ram" --time="$time" \
+            --chdir="$root" --output="logs/${method}_qwen35_${model}_${size}_%j.log" \
+            --wrap="export TOKENIZERS_PARALLELISM=false PYTHONUNBUFFERED=1; exec ${command_line}"
+    done
+done

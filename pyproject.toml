@@ -3,5 +3,29 @@ name = "better-nli"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "accelerate",
+    "datasets",
+    "huggingface-hub",
+    "ipykernel",
+    "ipython",
+    "ipywidgets",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pyarrow",
+    "python-dotenv",
+    "scikit-learn",
+    "scipy",
+    "seaborn",
+    "torch",
+    "tqdm",
+    "transformers",
+]
+
+[project.optional-dependencies]
+big-bench-annotation = ["absl-py", "immutabledict", "tabulate"]
+
+[tool.uv]
+package = false

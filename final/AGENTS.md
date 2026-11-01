@@ -15,7 +15,7 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 - `tests/__init__.py` — Test package marker.
 - `tests/test_llm_critic.py` — Judge and CLI regression tests.
 - `tests/test_dc_pmi.py` — DC-PMI, cache, and CLI tests.
-- `slurm_jobs/` — SLURM scripts: `llmcritic_qwen35_4b_smoke.slurm` and `dcpmi_qwen35_4b_smoke.slurm` test four examples per task; `llmcritic_qwen35_{4b,9b,27b}_full.slurm` and `dcpmi_qwen35_{4b,9b,27b}_full.slurm` run all examples using the `llm_judge` and `dc_pmi` subcommands, respectively.
+- `start_jobs` — Submits independent SLURM batch jobs directly via `sbatch --wrap` for smoke (4B, four examples per task), small (4B/9B/27B, 100 per task), or full (4B/9B/27B, all examples) runs of `llm_judge`, `dc_pmi`, or both. No job arrays or `.slurm` files.
 - `benchmark-overview.ipynb` — Inspects the three benchmarks and their example traces and labels.
 - `llm-critic-demo.ipynb` — Runs and compares non-thinking and thinking first-error detection.
 - `dc-pmi-demo.ipynb` — Samples four examples per task, scores with non-thinking Qwen3.5-4B, and plots per-benchmark ROC curves.
