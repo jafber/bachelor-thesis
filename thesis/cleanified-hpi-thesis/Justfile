@@ -1,0 +1,14 @@
+set default-list
+
+# Generate the template thumbnail from the example document
+thumbnail:
+    sed 's|#import "@preview/cleanified-hpi-thesis:0.3.0": \*|#import "../template/lib.typ": *|' example/main.typ > example/main.thumbnail.typ
+    typst compile example/main.thumbnail.typ thumbnail.png --root . --format png --pages 1
+    rm example/main.thumbnail.typ
+
+# Compile representative screen, minimal, and print documents without tracked output
+check:
+    mkdir -p /tmp/cleanified-hpi-thesis-check
+    typst compile tests/smoke.typ /tmp/cleanified-hpi-thesis-check/screen.pdf --root . --input variant=screen
+    typst compile tests/smoke.typ /tmp/cleanified-hpi-thesis-check/minimal.pdf --root . --input variant=minimal
+    typst compile tests/smoke.typ /tmp/cleanified-hpi-thesis-check/print.pdf --root . --input variant=print --input lang=de
