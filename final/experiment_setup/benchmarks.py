@@ -55,6 +55,33 @@ def sample_tasks(tasks, size=100, seed=42):
     return [e for key, group in tasks.items() for e in random.Random(f"{seed}:{key}").sample(group, size)]
 
 
+def sample_control_and_error(examples, seed=42):
+    """Return (error, control) examples matched by task and number of steps.
+
+    Draw error traces in random order, pairing each with an unused, randomly
+    chosen error-free trace of the same length. Discard unmatched errors.
+    """
+    tasks = {}
+    for example in examples:
+        tasks.setdefault((example.benchmark, example.task), []).append(example)
+    rng = random.Random(seed)
+    errors, controls = [], []
+    for group in tasks.values():
+        candidates = [example for example in group if example.label is not None]
+        available = {}
+        for example in group:
+            if example.label is None:
+                available.setdefault(len(example.steps), []).append(example)
+        rng.shuffle(candidates)
+        for example in candidates:
+            matches = available.get(len(example.steps), [])
+            if not matches:
+                continue
+            errors.append(example)
+            controls.append(matches.pop(rng.randrange(len(matches))))
+    return errors, controls
+
+
 def select_examples(tasks, benchmarks=None, task_names=None, sample_size=None, seed=42):
     known_benchmarks = {benchmark for benchmark, _ in tasks}
     known_tasks = {f"{benchmark}/{task}" for benchmark, task in tasks}

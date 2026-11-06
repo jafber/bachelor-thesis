@@ -131,14 +131,14 @@ class CriticTests(unittest.TestCase):
                 path = Path(tmp) / "results.sqlite"
                 evaluate([self.mr, self.pb], cache_path=path)
                 evaluate([self.mr, self.pb], cache_path=path, cache_only=True)
-                self.assertEqual(bar.call_count, 2)
+                self.assertEqual(bar.call_count, 1)  # cache-only loading does not run inference
                 self.assertEqual(bar.call_args.kwargs["total"], 2)
             logs = output.getvalue()
             self.assertRegex(logs, r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} INFO")
-            self.assertIn("Cache lookup complete: 2/2 examples loaded from cache; 0 need inference", logs)
+            self.assertIn("Cache lookup complete: 0/2 examples loaded from cache; 2 need inference", logs)
             self.assertIn("Starting LLM judge inference: 2 samples", logs)
             self.assertIn("Loading judge", logs)
-            self.assertIn("Evaluation complete: 2 examples (cache hits=2, generated=0)", logs)
+            self.assertIn("Inference complete: 2 examples (cache hits=0, generated=2)", logs)
         finally:
             logger.removeHandler(handler)
 
@@ -264,8 +264,14 @@ class CriticTests(unittest.TestCase):
                 row = db.execute("SELECT key, benchmark, task, uid, payload FROM responses WHERE uid=?",
                                  (self.mr.uid,)).fetchone()
                 self.assertEqual(row, (result.iloc[0].cache_key, "MR-GSM8K", "original", "a", json.dumps(transcript)))
-            cached = evaluate([self.mr], cache_path=path, cache_only=True)
+            cached = llm_critic.load_run([self.mr], cache_path=path)
             self.assertEqual(cached.iloc[0].transcript, transcript)
+            with self.assertRaisesRegex(RuntimeError, "Cache miss"):
+                llm_critic.load_run([self.mr], cache_path=path, thinking=True)
+            changed = Example(self.mr.benchmark, self.mr.task, self.mr.uid, "changed question",
+                              self.mr.steps, self.mr.label)
+            with self.assertRaisesRegex(RuntimeError, "Cache miss"):
+                llm_critic.load_run([changed], cache_path=path)
             self.assertEqual(cached.iloc[0].prediction, 0)
 
     def test_batch_interruption_resume_and_single_vs_batch(self):

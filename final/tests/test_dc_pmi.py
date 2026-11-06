@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import pandas as pd
+
 from experiment_setup.benchmarks import Example
 from experiment_setup import dc_pmi
 import run_experiment
@@ -86,16 +88,86 @@ class DCPMITests(unittest.TestCase):
                           "\n".join(logs.output))
             self.assertIn("Starting DC-PMI inference: 1 samples", "\n".join(logs.output))
             self.assertEqual(calls, ["load", "wrong", "load", "right"])
-            cached = dc_pmi.evaluate([self.wrong, self.right], cache_path=path,
-                                     cache_only=True)
+            cached = dc_pmi.load_run([self.wrong, self.right], cache_path=path)
             self.assertEqual(calls, ["load", "wrong", "load", "right"])
             from pandas.testing import assert_frame_equal
             assert_frame_equal(both, cached)
+            dc_pmi.run_inference([self.wrong, self.right], cache_path=path)
+            self.assertEqual(calls, ["load", "wrong", "load", "right"])
+            with self.assertRaisesRegex(RuntimeError, "Cache miss"):
+                dc_pmi.load_run([self.wrong], model_id="another-model", cache_path=path)
             self.assertAlmostEqual(first.iloc[1].dc_pmi_generic_domain, -2.)
-            self.assertEqual(dc_pmi.auc_statistics(both).set_index("metric").loc["perplexity", "auc"], 1.)
+            summary = dc_pmi.statistics(both).set_index("metric")
+            self.assertEqual(summary.loc["perplexity", "auc"], 1.)
+            self.assertEqual(summary.loc["perplexity", "f1"], 1.)
+            self.assertEqual(summary.loc["perplexity", "mcc"], 1.)
+            self.assertEqual(dc_pmi.statistics(both.assign(dc_pmi_generic_domain=1.)).set_index("metric")
+                             .loc["dc_pmi_generic_domain", "p_value"], 1.)
             with self.assertRaisesRegex(RuntimeError, "Cache miss"):
                 dc_pmi.evaluate([self.wrong], model_id="another-model", cache_path=path,
                                 cache_only=True)
+
+    def test_auc_and_roc_include_post_error_steps_with_directional_scores(self):
+        from experiment_setup.plots import plot_first_error_roc, plot_task_auc_bars
+        scores = pd.DataFrame([
+            dict(benchmark="ProcessBench", task="math", uid="wrong", step=step,
+                 first_error=step == 2, verified=step <= 2,
+                 **{metric: float(step) for metric in dc_pmi.METRICS})
+            for step in range(4)
+        ])
+        stats = dc_pmi.statistics(scores)
+        self.assertTrue((stats.n_steps == 4).all())
+        self.assertTrue((stats.coverage == 1).all())
+        for row in stats.itertuples():
+            self.assertAlmostEqual(row.auc, 2 / 3 if row.metric == "perplexity" else 1 / 3)
+        self.assertTrue(pd.isna(stats.loc[stats.metric == "perplexity", "p_value"]).all())
+        self.assertTrue((stats.loc[stats.metric != "perplexity", "p_value"] > 0.05).all())
+        fig, plotted = plot_first_error_roc(scores)
+        self.assertTrue((plotted.n_steps == 4).all())
+        self.assertTrue((plotted.auc == stats.auc.to_numpy()).all())
+        import matplotlib.pyplot as plt
+        plt.close(fig)
+        for metric in dc_pmi.METRICS:
+            bars = plot_task_auc_bars(stats.assign(model="4B"), metric, ("4B",))
+            self.assertEqual(len(bars.axes[0].patches), 1)
+            self.assertEqual(bars.axes[0].patches[0].get_alpha(),
+                             None if metric == "perplexity" else 0.35)
+            plt.close(bars)
+
+    def test_question_ablation_low_scores_predict_errors(self):
+        scores = pd.DataFrame([
+            dict(benchmark="ProcessBench", task="math", uid=str(i), first_error=i < 4,
+                 **{metric: float(i) for metric in dc_pmi.METRICS})
+            for i in range(8)
+        ])
+        stats = dc_pmi.statistics(scores).set_index("metric")
+        self.assertEqual(stats.loc["dc_pmi_question_ablation", "f1"], 1.)
+        self.assertEqual(stats.loc["dc_pmi_question_ablation", "mcc"], 1.)
+        for metric in dc_pmi.METRICS[1:]:
+            self.assertEqual(stats.loc[metric, "auc"], 1.)
+            self.assertAlmostEqual(stats.loc[metric, "p_value"], 1 / 70)
+        self.assertLess(stats.loc["perplexity", "f1"], 1.)
+        self.assertTrue(pd.isna(stats.loc["perplexity", "p_value"]))
+
+    def test_auc_significance_and_bar_contrast(self):
+        from experiment_setup.plots import plot_task_auc_bars
+        import matplotlib.pyplot as plt
+
+        scores = pd.DataFrame([
+            dict(benchmark="ProcessBench", task="separated", uid=str(i), first_error=i >= 4,
+                 **{metric: float(i) if metric == "perplexity" else -float(i)
+                    for metric in dc_pmi.METRICS})
+            for i in range(8)
+        ])
+        stats = dc_pmi.statistics(scores)
+        self.assertEqual(stats.loc[stats.metric == "perplexity", "auc"].iloc[0], 1.)
+        self.assertTrue((stats.loc[stats.metric != "perplexity", "auc"] == 1).all())
+        self.assertTrue(pd.isna(stats.p_value.iloc[0]))
+        self.assertAlmostEqual(stats.loc[stats.metric != "perplexity", "p_value"].iloc[0], 1 / 70)
+        stats = pd.concat([stats, stats.assign(task="not_significant", p_value=0.5)])
+        fig = plot_task_auc_bars(stats.assign(model="4B"), "dc_pmi_generic_domain", ("4B",))
+        self.assertEqual([bar.get_alpha() for bar in fig.axes[0].patches], [None, 0.35])
+        plt.close(fig)
 
     def test_cli_dc_pmi(self):
         with tempfile.TemporaryDirectory() as tmp, \

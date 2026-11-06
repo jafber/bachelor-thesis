@@ -3,7 +3,10 @@ import math
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.metrics import make_scorer, f1_score, matthews_corrcoef, roc_auc_score
+from sklearn.model_selection import TunedThresholdClassifierCV
+from scipy.stats import mannwhitneyu
 
 from .benchmarks import ROOT, numbered_steps, problem_for
 from .experiment_cache import CachedExperiment, ExperimentCache
@@ -17,6 +20,8 @@ DENOMINATORS = {"dc_pmi_generic_domain": "generic_domain",
                 "dc_pmi_question_ablation": "question_ablated",
                 "dc_pmi_history_ablation": "history_ablated"}
 METRICS = ("perplexity", *DENOMINATORS)
+f1_scorer = make_scorer(f1_score, zero_division=0)
+mcc_scorer = make_scorer(matthews_corrcoef)
 
 
 def scoring_inputs(e):
@@ -168,60 +173,131 @@ class DCExperiment(CachedExperiment):
                         self.inference_count, self.batch_size, self.config["inference_batch_size"])
         return self.backend.score_batch(batch)
 
-    def record(self, e, key, payload):
-        validate_payload(payload, len(e.steps))
-        return (e, key, payload)
-
     def log_peak_memory(self):
         if self.backend is not None:
             self.backend.log_peak_memory()
 
 
 def derive_scores(records):
-    rows = []
+    """Reduce variable-length token spans per trace, then derive metrics by column."""
+    columns = {name: [] for name in ("benchmark", "task", "uid", "label", "step", "cache_key",
+                                     "tokens", *CONTEXTS)}
     for e, key, payload in records:
-        for index in range(len(e.steps)):
-            totals = {}
-            for context in CONTEXTS:
-                entry = payload[context]
-                a, b = entry["step_spans"][index]
-                totals[context] = float(np.sum(entry["token_logprobs"][a:b]))
-            full_tokens = payload["full"]["step_spans"][index][1] - payload["full"]["step_spans"][index][0]
-            average_full = totals["full"] / full_tokens
-            row = dict(benchmark=e.benchmark, task=e.task, uid=e.uid, label=e.label,
-                       step=index, first_error=e.label == index,
-                       verified=e.label is None or index <= e.label, cache_key=key,
-                       tokens=full_tokens,
-                       average_log_likelihood=average_full,
-                       perplexity=math.exp(-average_full))
-            row.update({metric: totals["full"] - totals[denominator]
-                        for metric, denominator in DENOMINATORS.items()})
-            rows.append(row)
-    return pd.DataFrame(rows)
+        validate_payload(payload, len(e.steps))
+        n = len(e.steps)
+        for name, value in (("benchmark", e.benchmark), ("task", e.task), ("uid", e.uid),
+                            ("label", e.label), ("cache_key", key)):
+            columns[name].extend([value] * n)
+        columns["step"].extend(range(n))
+        for context in CONTEXTS:
+            entry = payload[context]
+            spans = np.asarray(entry["step_spans"])
+            cumulative = np.r_[0., np.cumsum(entry["token_logprobs"], dtype=float)]
+            columns[context].extend(cumulative[spans[:, 1]] - cumulative[spans[:, 0]])
+            if context == "full":
+                columns["tokens"].extend(spans[:, 1] - spans[:, 0])
+    scores = pd.DataFrame(columns)
+    scores["first_error"] = scores.label.eq(scores.step)
+    scores["verified"] = scores.label.isna() | scores.step.le(scores.label)
+    scores["average_log_likelihood"] = scores.full / scores.tokens
+    scores["perplexity"] = np.exp(-scores.average_log_likelihood)
+    for metric, denominator in DENOMINATORS.items():
+        scores[metric] = scores.full - scores[denominator]
+    return scores.drop(columns=list(CONTEXTS))[[
+        "benchmark", "task", "uid", "label", "step", "first_error", "verified", "cache_key",
+        "tokens", "average_log_likelihood", *METRICS]]
 
 
-def auc_statistics(scores):
-    """ROC AUC on known-correct steps and annotated first errors only."""
+class RawScoreClassifier(ClassifierMixin, BaseEstimator):
+    """Expose a metric's raw value as a classifier decision score."""
+
+    def fit(self, X, y):
+        self.classes_ = np.unique(y)
+        return self
+
+    def decision_function(self, X):
+        return np.asarray(X)[:, 0]
+
+    def predict(self, X):
+        return self.classes_[(self.decision_function(X) >= 0).astype(int)]
+
+
+def error_evidence_score(scores, metric):
+    """Higher perplexity or lower DC-PMI indicates stronger error evidence."""
+    return scores[metric] if metric == "perplexity" else -scores[metric]
+
+
+def tuned_binary_score(group, metric, scoring):
+    labels = group.first_error.astype(int)
+    values = error_evidence_score(group, metric).to_numpy().reshape(-1, 1)
+    classifier = RawScoreClassifier().fit(values, labels)
+    tuned = TunedThresholdClassifierCV(classifier, scoring=scoring, cv="prefit", refit=False)
+    tuned.fit(values, labels)
+    return scoring(tuned, values, labels)
+
+
+def statistics(scores):
+    """Directional AUC/p-value and in-sample threshold-tuned F1/MCC on all steps.
+
+    Low DC-PMI and high perplexity predict first errors. For DC-PMI only,
+    the one-sided Mann–Whitney test asks whether negated scores are higher
+    at first-error steps.
+    """
     rows = []
     for (benchmark, task), group in scores.groupby(["benchmark", "task"], sort=False):
-        eligible = group[group.verified]
+        has_both_classes = group.first_error.nunique() == 2
         for metric in METRICS:
-            # Low DC-PMI and high perplexity indicate an error.
-            values = eligible[metric] * (1 if metric == "perplexity" else -1)
+            evidence = error_evidence_score(group, metric)
+            positives = evidence.loc[group.first_error]
+            negatives = evidence.loc[~group.first_error]
             rows.append(dict(benchmark=benchmark, task=task, metric=metric,
-                             n_examples=group.uid.nunique(), n_steps=len(eligible),
-                             first_errors=int(eligible.first_error.sum()),
-                             coverage=len(eligible) / len(group),
-                             auc=roc_auc_score(eligible.first_error, values)
-                             if eligible.first_error.nunique() == 2 else float("nan")))
+                             n_examples=group.uid.nunique(), n_steps=len(group),
+                             first_errors=int(group.first_error.sum()),
+                             coverage=1.0,
+                             auc=roc_auc_score(group.first_error, evidence)
+                             if has_both_classes else float("nan"),
+                             p_value=(1.0 if evidence.nunique() == 1 else
+                                      mannwhitneyu(positives, negatives, alternative="greater").pvalue)
+                             if has_both_classes and metric != "perplexity" else float("nan"),
+                             f1=tuned_binary_score(group, metric, f1_scorer)
+                             if has_both_classes and group[metric].nunique() > 1 else float("nan"),
+                             mcc=tuned_binary_score(group, metric, mcc_scorer)
+                             if has_both_classes and group[metric].nunique() > 1 else float("nan")))
     return pd.DataFrame(rows)
+
+
+def scoring_config(model_id, inference_batch_size):
+    assert inference_batch_size > 0
+    return dict(model_id=model_id, inference_batch_size=inference_batch_size,
+                instruction=INSTRUCTION, domain_question=DOMAIN_QUESTION)
+
+
+def run_inference(examples, *, model_id="Qwen/Qwen3.5-4B", cache_path=ROOT / "cache" / "dc_pmi.sqlite",
+                  cache_only=False, batch_size=1, inference_batch_size=1):
+    """Score missing traces and persist raw logprobs, without computing metrics."""
+    config = scoring_config(model_id, inference_batch_size)
+    DCExperiment(ExperimentCache(cache_path, "likelihoods"), config, batch_size, cache_only).run(examples)
+
+
+def load_run(examples, *, model_id="Qwen/Qwen3.5-4B", cache_path=ROOT / "cache" / "dc_pmi.sqlite",
+             inference_batch_size=1):
+    """Fetch all logprobs in one query and derive step scores without a GPU."""
+    config = scoring_config(model_id, inference_batch_size)
+    cache = ExperimentCache(cache_path, "likelihoods")
+    try:
+        logger.info(f"Loading {len(examples)} records from {cache_path}")
+        records = cache.load_run(examples, scoring_inputs, config, PROMPT_VERSION)
+        logger.info(f"Loaded records")
+    finally:
+        cache.close()
+    return derive_scores(records)
 
 
 def evaluate(examples, *, model_id="Qwen/Qwen3.5-4B", cache_path=ROOT / "cache" / "dc_pmi.sqlite",
              cache_only=False, batch_size=1, inference_batch_size=1):
-    assert inference_batch_size > 0
-    config = dict(model_id=model_id, inference_batch_size=inference_batch_size,
-                  instruction=INSTRUCTION, domain_question=DOMAIN_QUESTION)
-    experiment = DCExperiment(ExperimentCache(cache_path, "likelihoods"), config,
-                              batch_size, cache_only)
-    return derive_scores(experiment.run(examples))
+    examples = list(examples)
+    if not cache_only:
+        run_inference(examples, model_id=model_id, cache_path=cache_path, batch_size=batch_size,
+                      inference_batch_size=inference_batch_size)
+    return load_run(examples, model_id=model_id, cache_path=cache_path,
+                    inference_batch_size=inference_batch_size)

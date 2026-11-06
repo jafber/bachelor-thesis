@@ -22,6 +22,9 @@ class ExperimentCache:
         self.db.execute(f"CREATE INDEX IF NOT EXISTS {table}_example ON {table} (benchmark, task, uid)")
         self.db.commit()
 
+    def contains(self, key):
+        return self.db.execute(f"SELECT 1 FROM {self.table} WHERE key=?", (key,)).fetchone() is not None
+
     def get(self, key):
         row = self.db.execute(f"SELECT payload FROM {self.table} WHERE key=?", (key,)).fetchone()
         return json.loads(row[0]) if row else None
@@ -34,18 +37,30 @@ class ExperimentCache:
                             (key, e.benchmark, e.task, e.uid, serialized, json.dumps(config, sort_keys=True)))
         assert self.get(key) == payload, "Conflicting payload for cache key"
 
+    def load_run(self, examples, inputs_for, config, version):
+        """Fetch a run in one SQLite query, checking exact input-dependent keys."""
+        config_json = json.dumps(config, sort_keys=True)
+        rows = dict(self.db.execute(
+            f"SELECT key, payload FROM {self.table} WHERE config=?", (config_json,)))
+        records = []
+        for e in examples:
+            key = cache_key(e, inputs_for(e), config, version)
+            if key not in rows:
+                raise RuntimeError(f"Cache miss: {e.benchmark}/{e.task}/{e.uid} ({key})")
+            records.append((e, key, json.loads(rows[key])))
+        return records
+
     def close(self):
         self.db.close()
 
 
 class CachedExperiment:
-    """Subclass with inputs(e), process(batch), record(e, key, payload)."""
+    """Subclass with inputs(e) and process(batch); inference only, no evaluation."""
     def __init__(self, cache, config, version, batch_size, cache_only, logger):
         assert batch_size > 0
         self.cache, self.config, self.version = cache, config, version
         self.batch_size, self.cache_only = batch_size, cache_only
         self.logger = logger
-        self.rows = []
         self.hits = self.misses = 0
 
     def run(self, examples):
@@ -53,27 +68,23 @@ class CachedExperiment:
 
         total = len(examples) if hasattr(examples, "__len__") else None
         completed = False
-        self.logger.info("Starting evaluation: model=%s examples=%s cache_only=%s",
+        self.logger.info("Starting inference: model=%s examples=%s cache_only=%s",
                          self.config["model_id"], total if total is not None else "?", self.cache_only)
         try:
-            with tqdm(total=total, desc="Evaluating", unit="example") as bar:
+            with tqdm(total=total, desc="Inference", unit="example") as bar:
                 pending = []
                 for e in examples:
                     inputs = self.inputs(e)
                     key = cache_key(e, inputs, self.config, self.version)
-                    payload = self.cache.get(key)
-                    index = len(self.rows)
-                    self.rows.append(None)
-                    if payload is None:
-                        pending.append((index, e, inputs, key))
+                    if not self.cache.contains(key):
+                        pending.append((e, inputs, key))
                     else:
-                        self.rows[index] = self.record(e, key, payload)
                         self.hits += 1
                         bar.update(1)
                 self.logger.info("Cache lookup complete: %s/%s examples loaded from cache; %s need inference",
-                                 self.hits, len(self.rows), len(pending))
+                                 self.hits, self.hits + len(pending), len(pending))
                 if pending and self.cache_only:
-                    _, e, _, key = pending[0]
+                    e, _, key = pending[0]
                     raise RuntimeError(f"Cache miss: {e.benchmark}/{e.task}/{e.uid} ({key})")
                 if pending:
                     self.inference_count = len(pending)
@@ -81,21 +92,20 @@ class CachedExperiment:
                                      self.inference_count, self.batch_size, self.config["model_id"])
                 for start in range(0, len(pending), self.batch_size):
                     batch = pending[start:start + self.batch_size]
-                    payloads = self.process([(e, inputs) for _, e, inputs, _ in batch])
+                    payloads = self.process([(e, inputs) for e, inputs, _ in batch])
                     assert len(payloads) == len(batch)
-                    for (index, e, _, key), payload in zip(batch, payloads):
+                    for (e, _, key), payload in zip(batch, payloads):
                         self.cache.put(key, e, payload, self.config)
-                        self.rows[index] = self.record(e, key, payload)
                         self.misses += 1
                         bar.update(1)
                 completed = True
         finally:
             self.cache.close()
             self.log_peak_memory()
-            self.logger.info("Evaluation %s: %s examples (cache hits=%s, generated=%s)",
+            self.logger.info("Inference %s: %s examples (cache hits=%s, generated=%s)",
                              "complete" if completed else "interrupted", self.hits + self.misses,
                              self.hits, self.misses)
-        return self.rows
+        return self.hits, self.misses
 
     def log_peak_memory(self):
         pass

@@ -77,7 +77,7 @@ def main(argv=None):
         results = dc_pmi.evaluate(examples, model_id=args.model, batch_size=args.batch_size,
                                   inference_batch_size=args.inference_batch_size,
                                   cache_path=args.cache, cache_only=args.cache_only)
-        summary = dc_pmi.auc_statistics(results)
+        summary = dc_pmi.statistics(results)
     args.results.parent.mkdir(parents=True, exist_ok=True)
     summary_path = args.results.with_name(f"{args.results.stem}_statistics.csv")
     results.to_csv(args.results, index=False)

@@ -11,7 +11,7 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 - `experiment_setup/logging_setup.py` — Shared timestamped logging configuration for judge and DC-PMI runs.
 - `experiment_setup/llm_critic.py` — LLM judge prompting, generation, parsing, and evaluation statistics.
 - `experiment_setup/dc_pmi.py` — Teacher-forced likelihood scoring, token-step spans, DC-PMI/perplexity derivation, and AUC summaries.
-- `experiment_setup/plots.py` — Per-benchmark first-error ROC curves and pooled step-level AUCs.
+- `experiment_setup/plots.py` — Per-benchmark first-error ROC curves, pooled step-level AUCs, and task AUROC bar charts for each scoring method.
 - `tests/__init__.py` — Test package marker.
 - `tests/test_llm_critic.py` — Judge and CLI regression tests.
 - `tests/test_dc_pmi.py` — DC-PMI, cache, and CLI tests.
@@ -19,11 +19,13 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 - `benchmark-overview.ipynb` — Inspects the three benchmarks and their example traces and labels.
 - `llm-critic-demo.ipynb` — Runs and compares non-thinking and thinking first-error detection.
 - `dc-pmi-demo.ipynb` — Samples four examples per task, scores with non-thinking Qwen3.5-4B, and plots per-benchmark ROC curves.
+- `final-charts.ipynb` — Cache-only evaluation of the 100-per-task runs: judge F1 tables and benchmark bars, AUROC tables and per-model task bars for all four scoring methods, pooled first-error trajectories with random-center controls, and first-difference trajectories.
+- `shuffled-objects-task.ipynb` — Cache-only analysis of negative question-ablated DC-PMI first-error detection and LLM judge performance on BIG-Bench Mistake tracking-shuffled-objects traces.
 - `mr-gsm8k-issue.ipynb` — Investigates invalid reference answers in MR-GSM8K reversed examples.
 - `prompts.ipynb` — Inspects a judge's full tokenized prompt and generated response.
 - `BIG-Bench-Mistake/` — Bundled benchmark JSONL data, README, license, and results image; `annotate_dyck_languages.py` annotates Dyck-language trace mistakes.
 - `papers/` — Benchmark paper PDFs and reading notes.
-- `cache/` — Generated SQLite response/likelihood caches; `__pycache__/` — generated Python bytecode.
+- `cache/`, `final-cache/` — Generated SQLite response/likelihood caches; `__pycache__/` — generated Python bytecode.
 
 **Update this `AGENTS.md` whenever creating new files or deleting files in this directory or its subdirectories.**
 

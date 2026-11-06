@@ -156,29 +156,55 @@ class JudgeExperiment(CachedExperiment):
                         self.inference_count, self.batch_size)
         return self.judge.generate_batch([prompt for _, prompt in batch])
 
-    def record(self, e, key, transcript):
-        prediction, error = parse_response(transcript, e)
-        if error:
-            logger.warning("UNPARSEABLE %s/%s/%s: %s\n%s", e.benchmark, e.task, e.uid, error, transcript)
-        return dict(benchmark=e.benchmark, task=e.task, uid=e.uid, label=e.label,
-                    prediction=prediction, parse_error=error, transcript=transcript, cache_key=key)
-
     def log_peak_memory(self):
         if self.judge is not None:
             self.judge.log_peak_memory()
 
 
-def evaluate(examples, *, model_id="Qwen/Qwen3.5-4B", thinking=False,
-             max_new_tokens=None, cache_path=ROOT / "cache" / "llm_critic_v2.sqlite",
-             cache_only=False, batch_size=1, generation_kwargs=None):
+def judge_config(model_id, thinking, max_new_tokens, generation_kwargs):
     if max_new_tokens is None:
         max_new_tokens = THINKING_MAX_NEW_TOKENS if thinking else NON_THINKING_MAX_NEW_TOKENS
     assert max_new_tokens > 0
-    config = dict(model_id=model_id, thinking=thinking, max_new_tokens=max_new_tokens,
-                  generation_kwargs=generation_kwargs_for(thinking, generation_kwargs))
-    experiment = JudgeExperiment(ExperimentCache(cache_path, "responses"), config,
-                                 batch_size, cache_only)
-    return pd.DataFrame(experiment.run(examples))
+    return dict(model_id=model_id, thinking=thinking, max_new_tokens=max_new_tokens,
+                generation_kwargs=generation_kwargs_for(thinking, generation_kwargs))
+
+
+def run_inference(examples, *, model_id="Qwen/Qwen3.5-4B", thinking=False,
+                  max_new_tokens=None, cache_path=ROOT / "cache" / "llm_critic_v2.sqlite",
+                  cache_only=False, batch_size=1, generation_kwargs=None):
+    config = judge_config(model_id, thinking, max_new_tokens, generation_kwargs)
+    JudgeExperiment(ExperimentCache(cache_path, "responses"), config, batch_size, cache_only).run(examples)
+
+
+def load_run(examples, *, model_id="Qwen/Qwen3.5-4B", thinking=False,
+             max_new_tokens=None, cache_path=ROOT / "cache" / "llm_critic_v2.sqlite",
+             generation_kwargs=None):
+    """Load and parse all cached responses in one query, without inference."""
+    config = judge_config(model_id, thinking, max_new_tokens, generation_kwargs)
+    cache = ExperimentCache(cache_path, "responses")
+    try:
+        records = cache.load_run(examples, prompt_for, config, PROMPT_VERSION)
+    finally:
+        cache.close()
+    rows = []
+    for e, key, transcript in records:
+        prediction, error = parse_response(transcript, e)
+        if error:
+            logger.debug("UNPARSEABLE %s/%s/%s: %s\n%s", e.benchmark, e.task, e.uid, error, transcript)
+        rows.append(dict(benchmark=e.benchmark, task=e.task, uid=e.uid, label=e.label,
+                         prediction=prediction, parse_error=error, transcript=transcript, cache_key=key))
+    return pd.DataFrame(rows)
+
+
+def evaluate(examples, *, model_id="Qwen/Qwen3.5-4B", thinking=False,
+             max_new_tokens=None, cache_path=ROOT / "cache" / "llm_critic_v2.sqlite",
+             cache_only=False, batch_size=1, generation_kwargs=None):
+    examples = list(examples)
+    if not cache_only:
+        run_inference(examples, model_id=model_id, thinking=thinking, max_new_tokens=max_new_tokens,
+                      cache_path=cache_path, batch_size=batch_size, generation_kwargs=generation_kwargs)
+    return load_run(examples, model_id=model_id, thinking=thinking, max_new_tokens=max_new_tokens,
+                    cache_path=cache_path, generation_kwargs=generation_kwargs)
 
 
 def get_matches(results):
