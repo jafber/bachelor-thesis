@@ -31,6 +31,16 @@
     short: "DC-PMI",
     long: "Domain Conditional Pointwise Mutual Information",
   ),
+  (
+    key: "nli",
+    short: "NLI",
+    long: "Natural Language Inference",
+  ),
+  (
+    key: "mcc",
+    short: "MCC",
+    long: "Matthews Correlation Coefficient",
+  ),
 )
 
 #register-glossary(abbreviations)
