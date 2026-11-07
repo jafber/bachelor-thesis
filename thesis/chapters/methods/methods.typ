@@ -1,33 +1,17 @@
+#import "@preview/glossarium:0.5.10": gls
+
 = Experiment Methodology
 
-We evaluate two ways of locating the first error in a step-by-step solution: asking a language model to judge the complete trace, and scoring each step by how much its likelihood depends on the problem and preceding steps. Both methods receive the same problem and the same released step boundaries. An annotation identifies the first incorrect step, or indicates that the trace is error-free; correctness of the final answer alone is not a substitute for this annotation. We evaluate each benchmark task separately as well as across tasks, since their subjects, step formats, and error prevalences differ.
+We evaluate two ways of locating the first error in a given reasoning trace.
+
+- *@llm judge:* asking a language model to judge the complete trace.
+- *Context relevance:* scoring each step by how much its likelihood, as assigned by an @llm, depends on the problem.
+
+We run both methods on the same three error detection benchmarks, using the same selection of @llm:pl. We compare the error detection performance between the two methods and put it into the broader context of the benchmark papers' results.
 
 == Benchmarks
 
-All three benchmarks provide model-generated reasoning traces with first-error annotations. We retain each dataset's original segmentation, rather than dividing paragraphs or code-like steps into smaller units. For evaluation we normalize error positions to zero-based indices internally and represent an error-free trace by a missing index. This conversion does not change the steps shown to the judge: its displayed labels start at Step 1. No reference answer, correctness flag, or annotated error position is included in either method's input.
-
-=== ProcessBench
-
-ProcessBench consists of 3,400 expert-annotated mathematical solutions drawn from four problem sets: 400 GSM8K, and 1,000 each from MATH, OlympiadBench, and Omni-MATH @zheng_processbench_2025. The problems range from grade-school arithmetic to competition and Olympiad-level mathematics. Solutions originate from twelve Qwen and Llama-family generators; the released steps are coherent paragraphs produced by a separate segmentation procedure. The label is the index of the earliest erroneous paragraph, with $-1$ denoting a wholly correct solution. Importantly, a correct final answer does not guarantee an error-free derivation.
-
-The benchmark reports separate exact first-error accuracy on erroneous traces and no-error accuracy on clean traces, then combines them using their harmonic mean. If $E$ and $C$ are the sets of erroneous and clean traces, respectively, and $hat(y)_t$ is the predicted first-error index (or NONE), we use
-
-$ A_"error" = (sum_(t in E) 1[hat(y)_t = y_t]) / |E|, quad A_"correct" = (sum_(t in C) 1[hat(y)_t = "NONE"]) / |C|, $
-$ "HM" = (2 A_"error" A_"correct") / (A_"error" + A_"correct"). $
-
-We set HM to zero if both accuracies are zero. This quantity is called “F1” in the ProcessBench paper, but it is *not* the conventional binary F1 score. For comparison with its overall result, the four task-level harmonic means are averaged rather than pooling all traces first.
-
-=== MR-GSM8K
-
-MR-GSM8K contains 2,999 annotated MetaMath-7B solutions to grade-school mathematics problems derived from GSM8K @zeng_mr-gsm8k_2023. Its three subsets comprise 1,418 original problems, 222 program-of-thought problems with code-like solutions, and 1,359 reversed problems that ask for an unknown input given an output. There are 1,571 process-incorrect and 1,428 process-correct solutions. Steps already carry numbered labels in the released data; we preserve their boundaries and numbering.
-
-The original evaluation includes a binary correctness judgement measured by @mcc, exact first-error accuracy among process-incorrect solutions, and an additional measure requiring a correct explanation of the error. Our judge predicts only a location or NONE, so we report the first two measures but do not claim to reproduce explanation accuracy or the paper's complete MR-Score. Binary correctness refers to the *solution process*, not just whether the final numerical answer matches the reference.
-
-=== Big-Bench Mistake
-
-BIG-Bench Mistake contains 2,186 PaLM 2 Unicorn traces from five BIG-bench reasoning tasks @tyen_llms_2024: completing bracket sequences (Dyck languages), logical deduction, multistep arithmetic, tracking shuffled objects, and sorting words. The released traces annotate the first logical mistake or no mistake. The Dyck portion contains 986 traces; each other task contains 300. Unlike the mathematics-only benchmarks, these tasks cover several kinds of symbolic and verbal reasoning. Most Dyck labels were assigned automatically, whereas the other tasks use human annotation. The distribution is strongly skewed toward erroneous traces in several tasks.
-
-We measure exact first-error-or-NONE accuracy over all traces and distinguish error-only from clean-only performance. For binary error detection, regardless of location, we can additionally report weighted F1 to facilitate comparison with the benchmark's reporting. Our zero-shot, whole-trace judge is *not* a reproduction of the original paper's three-shot, per-step prompting; neither is evaluation on all 986 Dyck traces directly comparable to results on the paper's sampled Dyck subset.
+The three error detection benchmarks we chose all follow a similar structure. Each benchmark is made up of samples consisting of a problem statement from a reasoning or maths benchmark, followed by a #gls("llm")-generated step-by-step solution, referred to as the _reasoning trace_. Some traces are _clean_ (i.e. all reasoning steps are correct), some contain errors. In such cases, the first step containing an error is indicated by a label. Importantly, a correct final answer does not guarantee an error-free reasoning trace. As outlined in @bench-overview, the benchmarks contain reasoning traces for different types of logical and mathematical problems.
 
 #figure(
   table(
@@ -58,34 +42,77 @@ We measure exact first-error-or-NONE accuracy over all traces and distinguish er
     [Omni-MATH], [Olympiad-level mathematics], [1,000], [75.9%],
     table.cell(colspan: 2)[*Total*], [*3,400*], [*65.3%*],
   ),
-  caption: [Benchmark composition and proportion of traces annotated with a process error. Percentages refer to the first-error labels, not final-answer correctness.],
-)
+  caption: [Benchmark composition and proportion of traces annotated with an erroneous step.],
+) <bench-overview>
 
-=== Models
+During evaluation, a model is presented with a problem and the full reasoning trace (but not the error label) and tasked with determining a) whether the reasoning trace contains any errors and b) if the trace does contain errors, naming the first step where an error occurs.
 
-We use the Qwen3.5 4B, 9B, and 27B models @qwen_team_qwen35_2026. This range allows us to compare a common evaluation protocol across model sizes while remaining feasible on the available accelerators. Qwen3.5 supports both thinking and non-thinking generation; our likelihood-based experiment and the direct judge runs considered here use non-thinking mode, so the comparison does not conflate contextual-relevance scores with an additional generated deliberation. The same pretrained model supplies the step likelihoods and, in the judge experiment, the error prediction. Neither method is fine-tuned on benchmark labels.
+=== MR-GSM8K
 
-=== Technical Setup
+MR-GSM8K is a benchmark for evaluating whether @llm:pl can assess the correctness of other models' solutions on grade-school mathematics problems, introduced by #cite(<zeng_mr-gsm8k_2023>, form: "prose").
 
-The experiment implementation and evaluation scripts are available in the repository at #link("https://github.com/jafber/bachelor-thesis")[github.com/jafber/bachelor-thesis], under `final/`. Inference runs on the HPI high-performance cluster with two GH200 accelerators available for the jobs. Models are loaded in bfloat16; the likelihood experiment uses teacher forcing, while the non-thinking judge generates a single greedy response per trace. We cache raw model responses and token log probabilities, keeping them separate from derived scores so that metrics can be recomputed without rerunning inference. Results use the full released trace sets unless explicitly identified as sampled analyses; diagnostic samples of 100 traces per task use a fixed seed of 42. These are new experiments, not exact reproductions of the original papers' prompting and decoding protocols.
+*Benchmark setup.* MR-GSM8K contains 2,999 step-by-step solutions generated by MetaMath-7B, annotated for the first erroneous step as well as for the correctness of the final result. Its questions are derived from GSM8K and divided into three categories: 1,418 original word problems, 222 program-of-thought problems with code-like solutions, and 1,359 reversed problems that ask for an unknown input given an output.
+
+*Reported metrics.* #cite(<zeng_mr-gsm8k_2023>, form: "author") assess three aspects of a judge's response. First, they use the @mcc to measure whether the judge correctly classifies the whole solution as correct or incorrect, regardless of where exactly an error occurs. Second, they measure the proportion of incorrect solutions for which the judge identifies the exact first erroneous step. Third, they measure the proportion of incorrect solutions for which the judge both identifies that step and correctly explains the error.
+
+=== Big-Bench Mistake
+
+BIG-Bench Mistake is an error detection benchmark for a variety of logical and mathematical reasoning tasks, published by #cite(<tyen_llms_2024>, form: "prose").
+
+*Benchmark setup.* The released dataset contains 2,186 step-by-step solutions generated by PaLM 2 Unicorn for five BIG-bench tasks: completing bracket sequences (Dyck languages), logical deduction, multistep arithmetic, tracking shuffled objects, and sorting words alphabetically. Unlike the other two mathematical benchmarks, BIG-Bench Mistake covers several forms of symbolic and verbal reasoning. Error rates differ substantially between tasks, as shown in @bench-overview.
+
+*Reported metrics.* #cite(<tyen_llms_2024>, form: "author") report the accuracy accross all samples of identifying the first erroneous step, counting an error-free trace as correct only if the judge reports no mistake. They also report weighted F1 (as opposed to #cite(<zeng_mr-gsm8k_2023>, form: "author")'s @mcc) for the binary distinction between traces with and without errors, irrespective of the predicted error's location. These metrics answer different questions: a judge can correctly identify that a trace is flawed while selecting the wrong step. The paper's judge results use three-shot prompting, including per-step evaluation, and its published Dyck results use a sampled subset.
+
+=== ProcessBench
+
+ProcessBench is a mathematical error detection benchmark published by #cite(<zheng_processbench_2025>, form: "prose").
+
+*Benchmark setup.* ProcessBench consists of 3,400 expert-annotated mathematical solutions drawn from four problem sets, ranging from grade-school arithmetic to competition and Olympiad-level mathematics. Solutions originate from twelve Qwen and Llama-family generators. The released steps are coherent paragraphs produced by a separate segmentation procedure. 
+
+*Reported metrics.* #cite(<zheng_processbench_2025>, form: "author") evaluate a wide range of @prm:pl and open-source @llm judges as well as two proprietary @llm:pl on their benchmark. Analogously to #cite(<tyen_llms_2024>, form: "author"), they report exact first-error accuracy on erroneous traces. They also report the accuracy of reporting no error on clean traces, then combine the two accuracies using their harmonic mean. Let $E$ and $C$ be the sets of erroneous and clean traces, respectively, $y_t$ the labeled first error index for a given trace, and $hat(y)_t$ a model's predicted first-error index (or `NONE` if the model predicted no error). #cite(<zheng_processbench_2025>, form: "author") calculate a harmonic mean HM:
+
+$ A_"error" = (sum_(t in E) 1[hat(y)_t = y_t]) / (|E|), quad A_"clean" = (sum_(t in C) 1[hat(y)_t = "NONE"]) / (|C|), $
+$ "HM" = (2 A_"error" A_"clean") / (A_"error" + A_"clean"). $
+
+This quantity is referred to as “F1” in the ProcessBench paper, but it is *not* the conventional binary F1 score. To report overall performance, the harmonic means of the benchmark's four subtasks are averaged. 
+
+== Models
+
+We use the Qwen3.5 4B, 9B, and 27B models @qwen_team_qwen35_2026. This range allows us to compare a performance across model sizes while remaining feasible on the available compute. For the @llm judge evaluations, we run the models in non-thinking mode. However, Qwen3.5 also offers thinking generation, allowing for further evaluations in the future (see @thinking). The same pretrained model supplies the the error prediction in the judge experiment, and the step likelihoods in the context relevance experiment.
+
+== Technical Setup
+
+The experiment implementation and evaluation scripts are available in the repository at #link("https://github.com/jafber/bachelor-thesis")[github.com/jafber/bachelor-thesis]. To allow for flexible evaluation of varying sample sizes, we chose a modular structure for running inference, caching model outputs and evaluating results (see @architecture). Inference was run using two GH200 accelerators on the HPI high-performance cluster.
+
+#figure(
+  image("../placeholder.webp", width: 70%),
+  placement: auto,
+  caption: "Architecture diagram of evaluation pipeline."
+) <architecture>
 
 == @llm Judge experiment
 
+As a baseline for the models' error detection abilities, we evaluate their performance in judging solution correctness when simply presented with a prompt.
+
 === Setup
 
-For every trace, we give the judge a zero-shot prompt containing the problem and the complete, numbered solution. The instruction explicitly asks for the *first* mathematical, logical, or conceptual error, even if the final answer happens to be correct. It requests exactly one final line, `FINAL: NONE` for a fully correct solution or `FINAL: N` for the first erroneous Step N. Numbering starts at one for every benchmark, independent of how the released annotations encode indices. This common prompt makes performance across datasets comparable under our protocol; it deliberately does not use benchmark-specific examples or reference answers.
+For every trace, we give the judge a zero-shot prompt containing the problem and the complete, numbered reasoning trace. The model ist tasked with outputting exactly one line, `FINAL: NONE` if the trace is fully correct or `FINAL: N` for the first erroneous Step N. Numbering starts at one for every benchmark, independent of how the released annotations encode indices. To keep performance comparable across datasets, we do not use benchmark-specific prompts or few-shot examples.
 
 === Evaluation
 
-We generate one response for every trace and parse its final line case-insensitively. Only `FINAL: NONE` or an integer referring to an existing numbered step is a valid prediction. A missing final line, an out-of-range step, or any other unparseable response is counted as incorrect, *not* as a prediction of NONE. For an erroneous trace, success requires the annotated first error exactly; a later error is a miss. For a clean trace, only NONE is correct. Parse coverage is recorded separately so that malformed outputs cannot silently inflate accuracy.
+We generate one response for every trace and parse its final line case-insensitively. Only `FINAL: NONE` or an integer referring to an existing numbered step is a valid prediction. A missing final line, an out-of-range step, or any other unparseable response is counted as invalid. For an erroneous trace, success requires the annotated first error exactly; a later error is a miss. For a clean trace, only NONE is correct. We compute performance metrics on valid outputs only, reporting the number of invalid outputs separately.
 
 === Metrics <metrics>
+
+// TODO: rework this after finishing background. We want to give our reasoning "Why did we choose this method?" here.
 
 Our primary measure is exact-match accuracy over all traces: the fraction whose predicted location or NONE equals the annotation. To expose class imbalance and different failure modes, we also report $A_"error"$ and $A_"correct"$ as defined above. In particular, a judge that always returns NONE has zero error-only accuracy regardless of its overall accuracy on a clean-heavy dataset.
 
 For ProcessBench we report the harmonic mean of these two conditional accuracies by split. For MR-GSM8K we additionally evaluate whether the judge detects the *presence* of a process error, ignoring its position, using @mcc. @mcc accounts for all four cells of the binary confusion matrix and is informative when error prevalence is uneven. An erroneous location still counts as detection in this binary measure but not as successful localization. These distinct measures must not be read interchangeably. Invalid outputs count as errors in exact-match scoring and are penalized rather than treated as clean predictions in the all-trace binary comparison.
 
 == Context relevance experiment
+
+We use each model to compute the three context relevance scores outlined in @cr for each reasoning step. For comparison, we also compute the perplexity per step.
 
 === Setup
 
@@ -104,6 +131,8 @@ $ op("CR")_"history ablated"(i) = L(s_i | q, s_(<i)) - L(s_i | q). $
 Here $q_g$ is the generic question. A high difference means that the omitted information increases the model's preference for the step; a low difference is treated as potential evidence of an unsupported step. The question-ablated variant isolates the contribution of the actual question given the same history, whereas the history-ablated variant isolates the contribution of earlier steps given the same question. The fully ablated variant removes both. These scores reflect model likelihood, not a proof that a step logically follows from its premises. As a likelihood-only baseline we also compute full-context perplexity from the mean token log likelihood: higher perplexity indicates a less expected step.
 
 === Metrics
+
+// TODO: see above
 
 For step-level analysis, we label exactly the annotated first erroneous step positive and every other step negative, including steps after the first error. We pool steps within each benchmark task and report @auroc using *negative* context relevance as error evidence: 0.5 corresponds to chance ranking and 1 to perfect separation. The one-sided Mann–Whitney U test asks whether error evidence is greater for first-error steps than for other steps. We report its p-value by task; it tests a directional difference in score distributions, not whether any individual prediction is correct. Since later steps are not necessarily independently verified by the annotations, treating them as negative is a limitation of this step-level analysis.
 

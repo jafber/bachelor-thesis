@@ -16,6 +16,8 @@
 
 === @dcpmi
 
+== Scoring methods
+
 
 = Our new metric: context relevance <cr>
 

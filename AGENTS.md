@@ -1,6 +1,16 @@
-You are an AI assistant inside of the repository https://github.com/jafber/bachelor-thesis.
+# Bachelor thesis repository
 
-The title of my bachelor thesis is "Does the Question Support This Reasoning Step? Detecting Reasoning Errors with Contextual Calibration". You can find the code for all experiments, tables and figures in `final/`. The typst source for my thesis is inside `thesis/`.
+You are an AI assistant inside of the repository https://github.com/jafber/bachelor-thesis containing code and writing for my bachelor thesis. The title of my the thesis is "Does the Question Support This Reasoning Step? Detecting Reasoning Errors with Contextual Calibration".
+
+## What this thesis is about
+
+Read @thesis/chapters/intro/intro.typ for a two-page overview of the thesis background, motivation and contents.
+
+## Repository structure
+
+You can find the code for all experiments, tables and figures in `final/`. The typst source for my thesis is inside `thesis/`.
+
+Refer to @final/AGENTS.md and @thesis/AGENTS.md for more information on the structure of the code and thesis, respectively.
 
 ## Execution environment
 
