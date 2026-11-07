@@ -51,6 +51,13 @@ class DCPMITests(unittest.TestCase):
         self.assertEqual(second.dc_pmi_question_ablation, -5.)  # -7 - (-2)
         self.assertEqual(second.dc_pmi_history_ablation, -6.)  # -7 - (-1)
         self.assertEqual(second.average_log_likelihood, -3.5)
+        averaged = dc_pmi.derive_scores([(self.wrong, "key", payload)], average_ll=True)
+        self.assertEqual(averaged.iloc[0].dc_pmi_generic_domain, 0.5)  # -3/2 - (-2/1)
+        self.assertEqual(averaged.iloc[1].dc_pmi_generic_domain, -1.5)  # -7/2 - (-4/2)
+        self.assertEqual(averaged.iloc[1].dc_pmi_question_ablation, -2.5)
+        self.assertEqual(averaged.iloc[1].dc_pmi_history_ablation, -2.5)
+        self.assertEqual(averaged.iloc[1].average_log_likelihood, -3.5)
+        self.assertEqual(averaged.iloc[1].perplexity, second.perplexity)
 
     def test_metrics_auc_and_cache_resume(self):
         calls = []
@@ -92,6 +99,10 @@ class DCPMITests(unittest.TestCase):
             self.assertEqual(calls, ["load", "wrong", "load", "right"])
             from pandas.testing import assert_frame_equal
             assert_frame_equal(both, cached)
+            averaged = dc_pmi.load_run([self.wrong, self.right], cache_path=path, average_ll=True)
+            assert_frame_equal(averaged, dc_pmi.evaluate([self.wrong, self.right], cache_path=path,
+                                                            cache_only=True, average_ll=True))
+            self.assertEqual(calls, ["load", "wrong", "load", "right"])
             dc_pmi.run_inference([self.wrong, self.right], cache_path=path)
             self.assertEqual(calls, ["load", "wrong", "load", "right"])
             with self.assertRaisesRegex(RuntimeError, "Cache miss"):

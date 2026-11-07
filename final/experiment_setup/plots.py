@@ -11,9 +11,9 @@ from .dc_pmi import METRICS, error_evidence_score
 
 METRIC_LABELS = {
     "perplexity": "Perplexity",
-    "dc_pmi_generic_domain": "Negative DC-PMI (generic domain)",
-    "dc_pmi_question_ablation": "Negative DC-PMI (question ablated)",
-    "dc_pmi_history_ablation": "Negative DC-PMI (history ablated)",
+    "dc_pmi_generic_domain": "Fully ablated context relevance",
+    "dc_pmi_question_ablation": "Question ablated context relevance",
+    "dc_pmi_history_ablation": "History ablated context relevance",
 }
 
 
@@ -77,7 +77,7 @@ def plot_matched_step_histograms(error_scores, control_scores, model="4B"):
         ], ignore_index=True)
         sns.histplot(data=values, x="score", hue="group", bins=30, stat="density",
                      common_norm=False, element="step", ax=ax)
-        ax.set(title=metric, xlabel="Step score", ylabel="Density")
+        ax.set(title=METRIC_LABELS[metric], xlabel="Step score", ylabel="Density")
     fig.suptitle(f"First-error vs matched control steps · Qwen3.5-{model}", y=1.03)
     fig.tight_layout()
     return fig

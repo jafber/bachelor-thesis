@@ -178,8 +178,8 @@ class DCExperiment(CachedExperiment):
             self.backend.log_peak_memory()
 
 
-def derive_scores(records):
-    """Reduce variable-length token spans per trace, then derive metrics by column."""
+def derive_scores(records, *, average_ll=False):
+    """Derive DC-PMI from total or per-context mean step log likelihoods."""
     columns = {name: [] for name in ("benchmark", "task", "uid", "label", "step", "cache_key",
                                      "tokens", *CONTEXTS)}
     for e, key, payload in records:
@@ -193,13 +193,14 @@ def derive_scores(records):
             entry = payload[context]
             spans = np.asarray(entry["step_spans"])
             cumulative = np.r_[0., np.cumsum(entry["token_logprobs"], dtype=float)]
-            columns[context].extend(cumulative[spans[:, 1]] - cumulative[spans[:, 0]])
+            totals = cumulative[spans[:, 1]] - cumulative[spans[:, 0]]
+            columns[context].extend(totals / (spans[:, 1] - spans[:, 0]) if average_ll else totals)
             if context == "full":
                 columns["tokens"].extend(spans[:, 1] - spans[:, 0])
     scores = pd.DataFrame(columns)
     scores["first_error"] = scores.label.eq(scores.step)
     scores["verified"] = scores.label.isna() | scores.step.le(scores.label)
-    scores["average_log_likelihood"] = scores.full / scores.tokens
+    scores["average_log_likelihood"] = scores.full if average_ll else scores.full / scores.tokens
     scores["perplexity"] = np.exp(-scores.average_log_likelihood)
     for metric, denominator in DENOMINATORS.items():
         scores[metric] = scores.full - scores[denominator]
@@ -280,7 +281,7 @@ def run_inference(examples, *, model_id="Qwen/Qwen3.5-4B", cache_path=ROOT / "ca
 
 
 def load_run(examples, *, model_id="Qwen/Qwen3.5-4B", cache_path=ROOT / "cache" / "dc_pmi.sqlite",
-             inference_batch_size=1):
+             inference_batch_size=1, average_ll=False):
     """Fetch all logprobs in one query and derive step scores without a GPU."""
     config = scoring_config(model_id, inference_batch_size)
     cache = ExperimentCache(cache_path, "likelihoods")
@@ -290,14 +291,14 @@ def load_run(examples, *, model_id="Qwen/Qwen3.5-4B", cache_path=ROOT / "cache" 
         logger.info(f"Loaded records")
     finally:
         cache.close()
-    return derive_scores(records)
+    return derive_scores(records, average_ll=average_ll)
 
 
 def evaluate(examples, *, model_id="Qwen/Qwen3.5-4B", cache_path=ROOT / "cache" / "dc_pmi.sqlite",
-             cache_only=False, batch_size=1, inference_batch_size=1):
+             cache_only=False, batch_size=1, inference_batch_size=1, average_ll=False):
     examples = list(examples)
     if not cache_only:
         run_inference(examples, model_id=model_id, cache_path=cache_path, batch_size=batch_size,
                       inference_batch_size=inference_batch_size)
     return load_run(examples, model_id=model_id, cache_path=cache_path,
-                    inference_batch_size=inference_batch_size)
+                    inference_batch_size=inference_batch_size, average_ll=average_ll)

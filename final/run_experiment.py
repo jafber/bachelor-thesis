@@ -43,6 +43,8 @@ def make_parser():
     add_shared_options(pmi, "dc_pmi.sqlite")
     pmi.add_argument("--inference-batch-size", type=positive_int, default=1,
                      help="Number of tokenized sequences per GPU forward pass")
+    pmi.add_argument("--average-ll", action="store_true",
+                     help="Compute DC-PMI from mean rather than total step log likelihoods")
     return parser
 
 
@@ -76,7 +78,8 @@ def main(argv=None):
     else:
         results = dc_pmi.evaluate(examples, model_id=args.model, batch_size=args.batch_size,
                                   inference_batch_size=args.inference_batch_size,
-                                  cache_path=args.cache, cache_only=args.cache_only)
+                                  cache_path=args.cache, cache_only=args.cache_only,
+                                  average_ll=args.average_ll)
         summary = dc_pmi.statistics(results)
     args.results.parent.mkdir(parents=True, exist_ok=True)
     summary_path = args.results.with_name(f"{args.results.stem}_statistics.csv")

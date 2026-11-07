@@ -65,7 +65,8 @@ def prompt_for(e):
 
 def parse_response(transcript, e):
     """Parse the final answer, allowing trailing chat-template special tokens."""
-    text = re.sub(r"(?:<\|[A-Za-z0-9_]+\|>\s*)+$", "", transcript.strip()).strip()
+    text = transcript.replace("<|endoftext|>", "").strip()
+    text = re.sub(r"(?:<\|[A-Za-z0-9_]+\|>\s*)+$", "", text).strip()
     match = re.search(r"(?i)^FINAL:\s*(NONE|-?\d+)\s*$", text.splitlines()[-1]) if text else None
     if match is None:
         return None, "missing FINAL line at end of response"

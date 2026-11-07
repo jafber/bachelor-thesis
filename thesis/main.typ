@@ -41,6 +41,11 @@
     short: "MCC",
     long: "Matthews Correlation Coefficient",
   ),
+  (
+    key: "auroc",
+    short: "AUROC",
+    long: "Area Under Receiver Operating Curve",
+  ),
 )
 
 #register-glossary(abbreviations)
@@ -62,9 +67,9 @@
   // labels: (declaration-city: "Berlin"),
 )
 
-// #abstract[
-//   This is a very good abstract.
-// ]
+#abstract[
+  This is a very good abstract.
+]
 
 // #abstract-de[
 //   Dies ist eine wirklich gute Zusammenfassung.
@@ -78,14 +83,18 @@
   #print-glossary(abbreviations)
 ]
 
-// #ai-declaration[
-//   Describe any use of generative AI tools here.
-// ]
+#ai-declaration[
+  Describe any use of generative AI tools here.
+]
 
-#include "sections/content.typ"
+#include "chapters/intro/intro.typ"
+#include "chapters/background/background.typ"
+#include "chapters/methods/methods.typ"
+#include "chapters/results/results.typ"
+#include "chapters/conclusion/conclusion.typ"
 
 #bibliography("zotero.bib", style: "apa")
 
 #appendix[
-  #include "sections/appendix.typ"
+  #include "appendix/appendix.typ"
 ]

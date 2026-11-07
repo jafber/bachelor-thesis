@@ -1,3 +1,10 @@
+create a new notebook comparison.ipynb. in the notebook,
+
+- turn each metric into a binary classifier by the following algo:
+- per trace, pick the step with the lowest context relevance. that step is suspected to be the error step. plot the error step detection accuracy for this
+method compared to the llm judges.
+- to get overall accuracy, use a threshold: for context accuracy below this threshold, we assume that the suspect is in fact an error. pick the threshold in a way that optimizes the overall accuracy. try to use a library for this. Can we use scipys TunedThresholdClassifierCV for this?
+
 Models can be prompted to structure their thinking into logical steps. The final sequence of these _reasoning steps_, commonly called a _reasoning trace_, offers an opportunity to locate the exactly where an error occurs rather than judging only the final response.
 
 
