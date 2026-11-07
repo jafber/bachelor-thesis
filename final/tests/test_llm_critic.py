@@ -2,6 +2,8 @@ import io
 import json
 import sqlite3
 import logging
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -179,6 +181,7 @@ class CriticTests(unittest.TestCase):
             pad_token_id = 0
 
             def apply_chat_template(self, messages, **kwargs):
+                self.template_options = kwargs
                 return Inputs(input_ids=torch.tensor([[0, 11, 12], [11, 12, 13]]))
 
             def batch_decode(self, ids, **kwargs):
@@ -198,12 +201,14 @@ class CriticTests(unittest.TestCase):
         judge.model = Model()
         judge.max_new_tokens = 128
         judge.thinking = False
+        judge.model_id = "meta-llama/Llama-3.2-3B-Instruct"
         judge.generation_kwargs = llm_critic.generation_kwargs_for(False)
         self.assertEqual(len(judge.generate_batch(["a", "b"])), 2)
         self.assertEqual(judge.model.kwargs["do_sample"], False)
         self.assertNotIn("logits_processor", judge.model.kwargs)
         self.assertEqual(judge.tokenizer.decoded_ids, [[0, 11, 12, 21, 22], [11, 12, 13, 21, 22]])
         self.assertEqual(judge.tokenizer.decode_options, {"skip_special_tokens": False})
+        self.assertNotIn("enable_thinking", judge.tokenizer.template_options)
 
     def test_thinking_sampling_overrides_and_presence_penalty(self):
         import torch
@@ -239,6 +244,7 @@ class CriticTests(unittest.TestCase):
                 return kwargs["input_ids"]
 
         judge.thinking = True
+        judge.model_id = "Qwen/Qwen3.5-4B"
         judge.tokenizer = Tokenizer()
         judge.model = Model()
         self.assertEqual(judge.generate_batch(["problem"]), ["transcript"])
@@ -252,6 +258,42 @@ class CriticTests(unittest.TestCase):
         self.assertEqual(llm_critic.generation_kwargs_for(False), {"do_sample": False})
         self.assertEqual(llm_critic.generation_kwargs_for(False, {"do_sample": True, "top_p": 0.8}),
                          {"do_sample": True, "top_p": 0.8})
+
+    def test_model_specific_template_and_thinking_guard(self):
+        from experiment_setup.chat_templates import chat_template_kwargs
+
+        self.assertEqual(chat_template_kwargs("Qwen/Qwen3.5-4B"), {"enable_thinking": False})
+        self.assertEqual(chat_template_kwargs("Qwen/Qwen3.5-4B", True), {"enable_thinking": True})
+        self.assertEqual(chat_template_kwargs("meta-llama/Llama-3.1-8B-Instruct"), {})
+        with self.assertRaisesRegex(ValueError, "--thinking is not supported"):
+            llm_critic.judge_config("meta-llama/Llama-3.2-3B-Instruct", True, None, None)
+        with patch.object(run_experiment, "load_examples") as load:
+            with self.assertRaises(SystemExit) as error, patch("sys.stderr", new_callable=io.StringIO):
+                run_experiment.main(["llm_judge", "--model", "meta-llama/Llama-3.2-3B-Instruct",
+                                     "--thinking", "--results", "unused.csv"])
+            self.assertEqual(error.exception.code, 2)
+            load.assert_not_called()
+
+    def test_launcher_model_families_without_submitting_jobs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            stub = Path(tmp) / "sbatch"
+            stub.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$SBATCH_CALLS"\n')
+            stub.chmod(0o755)
+            calls = Path(tmp) / "calls"
+            env = dict(os.environ, PATH=f"{tmp}:{os.environ['PATH']}", SBATCH_CALLS=str(calls))
+            launcher = Path(__file__).resolve().parents[1] / "start_jobs"
+            subprocess.run(["bash", str(launcher), "small", "dc_pmi", "--family", "llama"],
+                           check=True, env=env, capture_output=True, text=True)
+            lines = calls.read_text().splitlines()
+            self.assertEqual(len(lines), 2)
+            self.assertIn("meta-llama/Llama-3.2-3B-Instruct", lines[0])
+            self.assertIn("meta-llama/Llama-3.1-8B-Instruct", lines[1])
+            self.assertIn("dc_pmi_llama32_3b.sqlite", lines[0])
+            self.assertIn("dc_pmi_llama31_8b.sqlite", lines[1])
+            calls.unlink()
+            subprocess.run(["bash", str(launcher), "smoke", "llm_judge"],
+                           check=True, env=env, capture_output=True, text=True)
+            self.assertIn("Qwen/Qwen3.5-4B", calls.read_text())
 
     def test_cache_stores_full_transcript_and_example_identity(self):
         transcript = "<|im_start|>user\nQuestion<|im_end|>\n<|im_start|>assistant\nFINAL: 1<|im_end|>"

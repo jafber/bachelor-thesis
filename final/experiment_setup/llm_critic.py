@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.metrics import f1_score, matthews_corrcoef
 
 from .benchmarks import (ROOT, BBM_TASKS, PB_TASKS, Example, load_examples, sample_tasks, problem_for, solution_for)
+from .chat_templates import chat_template_kwargs
 from .experiment_cache import CachedExperiment, ExperimentCache, cache_key as shared_cache_key
 from .logging_setup import logger
 
@@ -99,7 +100,7 @@ class LLMJudge:
         logger.info("LLM judge model %s ready", model_id)
         self.device = self.model.device
         torch.cuda.reset_peak_memory_stats(self.device)
-        self.thinking, self.max_new_tokens = thinking, max_new_tokens
+        self.model_id, self.thinking, self.max_new_tokens = model_id, thinking, max_new_tokens
         self.generation_kwargs = generation_kwargs_for(thinking, generation_kwargs)
 
     def _generate_kwargs(self, prompt_length):
@@ -124,8 +125,9 @@ class LLMJudge:
         assert prompts
         inputs = self.tokenizer.apply_chat_template(
             [[{"role": "user", "content": prompt}] for prompt in prompts],
-            tokenize=True, add_generation_prompt=True, enable_thinking=self.thinking,
+            tokenize=True, add_generation_prompt=True,
             padding=True, return_tensors="pt", return_dict=True,
+            **chat_template_kwargs(self.model_id, self.thinking),
         ).to(self.model.device)
         with torch.inference_mode():
             outputs = self.model.generate(**inputs, **self._generate_kwargs(inputs["input_ids"].shape[1]),
@@ -163,6 +165,7 @@ class JudgeExperiment(CachedExperiment):
 
 
 def judge_config(model_id, thinking, max_new_tokens, generation_kwargs):
+    chat_template_kwargs(model_id, thinking)
     if max_new_tokens is None:
         max_new_tokens = THINKING_MAX_NEW_TOKENS if thinking else NON_THINKING_MAX_NEW_TOKENS
     assert max_new_tokens > 0

@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 from experiment_setup.benchmarks import ROOT, load_examples, select_examples
+from experiment_setup.chat_templates import chat_template_kwargs
 from experiment_setup import dc_pmi, llm_critic
 
 
@@ -58,8 +59,9 @@ def main(argv=None):
             if not isinstance(overrides, dict):
                 parser.error("--generation-kwargs must be a JSON object")
             llm_critic.generation_kwargs_for(args.thinking, overrides)
+            chat_template_kwargs(args.model, args.thinking)
         except (ValueError, AssertionError, TypeError) as exc:
-            parser.error(f"invalid --generation-kwargs: {exc}")
+            parser.error(f"invalid judge configuration: {exc}")
 
     tasks = load_examples()
     try:

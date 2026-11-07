@@ -9,6 +9,7 @@ from sklearn.model_selection import TunedThresholdClassifierCV
 from scipy.stats import mannwhitneyu
 
 from .benchmarks import ROOT, numbered_steps, problem_for
+from .chat_templates import chat_template_kwargs
 from .experiment_cache import CachedExperiment, ExperimentCache
 from .logging_setup import logger
 
@@ -84,13 +85,15 @@ class LikelihoodBackend:
                                                           device_map="auto").eval()
         logger.info("DC-PMI model %s ready", model_id)
         self.device = self.model.get_input_embeddings().weight.device
+        self.model_id = model_id
         self.inference_batch_size = inference_batch_size
         torch.cuda.reset_peak_memory_stats(self.device)
 
     def prompt(self, question):
         return self.tokenizer.apply_chat_template(
             [{"role": "user", "content": f"{INSTRUCTION}\n\nQuestion:\n{question}"}],
-            tokenize=False, add_generation_prompt=True, enable_thinking=False)
+            tokenize=False, add_generation_prompt=True,
+            **chat_template_kwargs(self.model_id))
 
     def score_texts(self, texts):
         import torch

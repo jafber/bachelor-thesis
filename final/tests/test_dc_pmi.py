@@ -33,6 +33,22 @@ class DCPMITests(unittest.TestCase):
                          2 * len("Step 1: one"))
         self.assertEqual(len(dc_pmi.derive_scores([(self.wrong, "key", payload)])), 2)
 
+    def test_prompt_uses_model_specific_chat_template(self):
+        backend = object.__new__(dc_pmi.LikelihoodBackend)
+
+        class Tokenizer:
+            def apply_chat_template(self, messages, **kwargs):
+                self.options = kwargs
+                return "prompt"
+
+        backend.tokenizer = Tokenizer()
+        backend.model_id = "meta-llama/Llama-3.2-3B-Instruct"
+        self.assertEqual(backend.prompt("question"), "prompt")
+        self.assertNotIn("enable_thinking", backend.tokenizer.options)
+        backend.model_id = "Qwen/Qwen3.5-4B"
+        backend.prompt("question")
+        self.assertIs(backend.tokenizer.options["enable_thinking"], False)
+
     def test_dc_pmi_uses_full_sequence_log_likelihoods(self):
         payload = {
             "full": dict(token_ids=[1, 2, 3, 4], token_logprobs=[-1., -2., -3., -4.],

@@ -1,35 +1,49 @@
 #!/usr/bin/env bash
-# From anywhere: final/start_jobs smoke|small|full [llm_judge|dc_pmi|both] [--arm]
+# From anywhere: final/start_jobs smoke|small|full [llm_judge|dc_pmi|both] [--arm] [--family qwen|llama]
 # Submits one independent SLURM job per method/model combination; never uses arrays.
 set -euo pipefail
 
-if (( $# < 1 || $# > 3 )); then
-    echo "Usage: $0 smoke|small|full [llm_judge|dc_pmi|both] [--arm]" >&2
+if (( $# < 1 )); then
+    echo "Usage: $0 smoke|small|full [llm_judge|dc_pmi|both] [--arm] [--family qwen|llama]" >&2
     exit 2
 fi
 case "$1" in
-    smoke) models=(4b); sample_size=4; time=00:30:00 ;;
-    small) models=(4b 9b 27b); sample_size=100; time=08:00:00 ;;
-    full) models=(4b 9b 27b); sample_size=; time=36:00:00 ;;
+    smoke) sample_size=4; time=00:30:00 ;;
+    small) sample_size=100; time=08:00:00 ;;
+    full) sample_size=; time=36:00:00 ;;
     *) echo "Unknown run size: $1 (expected smoke, small, or full)" >&2; exit 2 ;;
 esac
 size=$1
 shift
 method=both
 method_set=false
+family=qwen
+family_set=false
 arch=X86
-for arg in "$@"; do
-    case "$arg" in
+while (( $# )); do
+    case "$1" in
         --arm)
             [[ $arch == X86 ]] || { echo "Duplicate --arm" >&2; exit 2; }
             arch=ARM ;;
+        --family)
+            [[ $family_set == false && $# -ge 2 ]] || { echo "Missing or duplicate --family" >&2; exit 2; }
+            family=$2
+            [[ $family == qwen || $family == llama ]] || { echo "Unknown family: $family" >&2; exit 2; }
+            family_set=true
+            shift ;;
         llm_judge|dc_pmi|both)
             [[ $method_set == false ]] || { echo "Method specified twice" >&2; exit 2; }
-            method=$arg
+            method=$1
             method_set=true ;;
-        *) echo "Unknown argument: $arg" >&2; exit 2 ;;
+        *) echo "Unknown argument: $1" >&2; exit 2 ;;
     esac
+    shift
 done
+if [[ $family == qwen ]]; then
+    if [[ $size == smoke ]]; then models=(4b); else models=(4b 9b 27b); fi
+else
+    if [[ $size == smoke ]]; then models=(3b); else models=(3b 8b); fi
+fi
 case "$method" in
     llm_judge) methods=(llm_judge) ;;
     dc_pmi) methods=(dc_pmi) ;;
@@ -49,26 +63,28 @@ else
 fi
 
 for model in "${models[@]}"; do
-    case "$model" in
-        4b) gpu_mem=40GB; ram=32G; batch_size=4 ;;
-        9b) gpu_mem=40GB; ram=48G; batch_size=2 ;;
-        27b) gpu_mem=80GB; ram=96G; batch_size=1 ;;
+    case "$family:$model" in
+        qwen:4b) model_id=Qwen/Qwen3.5-4B; name=qwen35_4b; gpu_mem=40GB; ram=32G; batch_size=4 ;;
+        qwen:9b) model_id=Qwen/Qwen3.5-9B; name=qwen35_9b; gpu_mem=40GB; ram=48G; batch_size=2 ;;
+        qwen:27b) model_id=Qwen/Qwen3.5-27B; name=qwen35_27b; gpu_mem=80GB; ram=96G; batch_size=1 ;;
+        llama:3b) model_id=meta-llama/Llama-3.2-3B-Instruct; name=llama32_3b; gpu_mem=40GB; ram=32G; batch_size=4 ;;
+        llama:8b) model_id=meta-llama/Llama-3.1-8B-Instruct; name=llama31_8b; gpu_mem=40GB; ram=48G; batch_size=2 ;;
     esac
     for method in "${methods[@]}"; do
         if [[ $arch == X86 ]]; then constraint="ARCH:X86&GPU_MEM:${gpu_mem}"; fi
         args=("$python" -u run_experiment.py "$method"
-              --model "Qwen/Qwen3.5-${model^^}"
+              --model "$model_id"
               --batch-size "$batch_size"
-              --cache "cache/${method}_qwen35_${model}${suffix}.sqlite"
-              --results "runs/${method}_qwen35_${model}_${size}${suffix}.csv")
+              --cache "cache/${method}_${name}${suffix}.sqlite"
+              --results "runs/${method}_${name}_${size}${suffix}.csv")
         if [[ -n "$sample_size" ]]; then args+=(--sample-size "$sample_size" --seed 42); fi
         printf -v command_line '%q ' "${args[@]}"
 
-        sbatch --job-name="qwen35-${model}-${method}-${size}${suffix}" \
+        sbatch --job-name="${name//_/-}-${method}-${size}${suffix}" \
             --account=sci-demelo --partition=pot-hpi-gpu-batch \
             --constraint="$constraint" \
             --gpus=1 --nodes=1 --cpus-per-task=4 --mem="$ram" --time="$time" \
-            --chdir="$root" --output="logs/${method}_qwen35_${model}_${size}${suffix}_%j.log" \
+            --chdir="$root" --output="logs/${method}_${name}_${size}${suffix}_%j.log" \
             --wrap="export TOKENIZERS_PARALLELISM=false PYTHONUNBUFFERED=1; exec ${command_line}"
     done
 done

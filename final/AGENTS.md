@@ -7,6 +7,7 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 - `run_experiment.py` — CLI with `llm_judge` and `dc_pmi` subcommands for cache-resumable benchmark runs and CSV results.
 - `experiment_setup/__init__.py` — Python package marker.
 - `experiment_setup/benchmarks.py` — Shared benchmark loading, formatting, sampling, and task selection.
+- `experiment_setup/chat_templates.py` — Model-specific chat-template options and thinking-mode validation.
 - `experiment_setup/experiment_cache.py` — Shared SQLite cache keys and resumable cache-first batch orchestration.
 - `experiment_setup/logging_setup.py` — Shared timestamped logging configuration for judge and DC-PMI runs.
 - `experiment_setup/llm_critic.py` — LLM judge prompting, generation, parsing, and evaluation statistics.
@@ -17,7 +18,7 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 - `tests/test_llm_critic.py` — Judge and CLI regression tests.
 - `tests/test_judge_metrics.py` — Judge paper-metric regression tests.
 - `tests/test_dc_pmi.py` — DC-PMI, cache, and CLI tests.
-- `start_jobs` — Submits independent SLURM batch jobs directly via `sbatch --wrap` for smoke (4B, four examples per task), small (4B/9B/27B, 100 per task), or full (4B/9B/27B, all examples) runs of `llm_judge`, `dc_pmi`, or both. No job arrays or `.slurm` files.
+- `start_jobs` — Submits independent SLURM batch jobs directly via `sbatch --wrap` for smoke, small (100 per task), or full runs of `llm_judge`, `dc_pmi`, or both. Defaults to Qwen3.5 (4B/9B/27B); `--family llama` uses Llama 3.2 3B and Llama 3.1 8B. No job arrays or `.slurm` files.
 - `benchmark-overview.ipynb` — Inspects the three benchmarks and their example traces and labels.
 - `llm-critic-demo.ipynb` — Runs and compares non-thinking and thinking first-error detection.
 - `dc-pmi-demo.ipynb` — Samples four examples per task, scores with non-thinking Qwen3.5-4B, and plots per-benchmark ROC curves.
