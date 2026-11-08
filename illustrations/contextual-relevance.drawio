@@ -1,0 +1,67 @@
+<mxfile host="Electron">
+  <diagram name="Page-1" id="X246ZPEEf_cbUPAE3xJA">
+    <mxGraphModel dx="1893" dy="1046" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1000" pageHeight="570" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-19" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontSize=54;" value="&lt;font style=&quot;font-size: 69px;&quot;&gt;🧑🏻‍🔬&lt;/font&gt;" vertex="1">
+          <mxGeometry height="70" width="70" y="72" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontSize=50;" value="🤖" vertex="1">
+          <mxGeometry height="70" width="70" x="500" y="79" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#1F2937;fontSize=23;fontStyle=1;fontFamily=Arial;" value="Compare Likelihoods" vertex="1">
+          <mxGeometry height="38" width="960" y="162" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-20" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#334155;fontSize=19;fontStyle=1;fontFamily=Arial;" value="Full Context" vertex="1">
+          <mxGeometry height="35" width="290" y="217" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#334155;fontSize=19;fontStyle=1;fontFamily=Arial;" value="Ablated Context" vertex="1">
+          <mxGeometry height="35" width="290" x="390" y="217" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-4" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#CBD5E1;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: #64748B;&quot;&gt;Lloyd earns 10$ an hour...&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: #1F2937;&quot;&gt;1. $10 x 5 = $50 in week 1.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="330" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-2" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#CBD5E1;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: #64748B;&quot;&gt;A reasoning problem.&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: #1F2937;&quot;&gt;$10 x 5 = $50 in week 1.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="310" x="390" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#167347;fontSize=48;fontStyle=1;fontFamily=Arial;" value="&lt;font&gt;&amp;gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="65" width="60" x="330" y="278" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#167347;fontSize=18;fontStyle=1;fontFamily=Arial;" value="High Context Relevance&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(22, 115, 71), rgb(98, 178, 140));&quot;&gt;✅&amp;nbsp;&lt;/span&gt;" vertex="1">
+          <mxGeometry height="65" width="255" x="720" y="272.5" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-5" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#CBD5E1;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(100, 116, 139);&quot;&gt;Lloyd earns 10$ an hour...&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: rgb(100, 116, 139);&quot;&gt;1. $10 x 5 = $50 in week 1.&lt;/div&gt;&lt;div style=&quot;color: rgb(31, 41, 55);&quot;&gt;2. So he made $50 + $8 = $58 total.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="330" y="403" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-3" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#CBD5E1;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(100, 116, 139);&quot;&gt;A reasoning problem.&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: rgb(31, 41, 55);&quot;&gt;So he made $50 + $8 = $58 total.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="310" x="390" y="403" as="geometry" />
+        </mxCell>
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#A35D12;fontSize=18;fontStyle=1;fontFamily=Arial;" value="Low Context Relevance ⚠️&amp;nbsp;" vertex="1">
+          <mxGeometry height="65" width="255" x="720" y="415.5" as="geometry" />
+        </mxCell>
+        <mxCell id="rluhV-FECXLYnHbDEWyv-2" parent="1" style="shape=callout;whiteSpace=wrap;html=1;perimeter=calloutPerimeter;rounded=1;roundedPerimeter=1;strokeColor=#CBD5E1;fillColor=#F8FAFC;position2=0;size=22;position=0.05;base=30;fontSize=19;spacing=14;" value="&lt;span style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;Lloyd tutors for 10$ an hour: 5 hours in the first week, 8 hours in the second. How much did he earn in total?&lt;/span&gt;" vertex="1">
+          <mxGeometry height="112" width="410" x="80" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="rluhV-FECXLYnHbDEWyv-3" parent="1" style="shape=callout;whiteSpace=wrap;html=1;perimeter=calloutPerimeter;rounded=1;roundedPerimeter=1;strokeColor=#CBD5E1;fillColor=#F8FAFC;position2=0;size=22;position=0.05;base=30;fontSize=19;spacing=14;" value="&lt;div style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;1. $10 x 5 = $50 in week 1.&lt;/div&gt;&lt;div style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;&lt;b style=&quot;color: rgb(197, 48, 48);&quot;&gt;2. So he made $50 + $8 = $58 total.&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;Answer: $58&lt;/div&gt;" vertex="1">
+          <mxGeometry height="112" width="380" x="580" y="9" as="geometry" />
+        </mxCell>
+        <mxCell id="7Q65Zz7klpRtTicBYniu-1" parent="1" style="rounded=0;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=none;fillColor=none;fontColor=#64748B;fontSize=19;fontFamily=Arial;fontStyle=2" value="&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;High likelihood&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="38" width="150" y="343" as="geometry" />
+        </mxCell>
+        <mxCell id="7Q65Zz7klpRtTicBYniu-2" parent="1" style="rounded=0;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=none;fillColor=none;fontColor=#64748B;fontSize=19;fontFamily=Arial;fontStyle=2" value="&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;Low likelihood&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="38" width="210" x="390" y="343" as="geometry" />
+        </mxCell>
+        <mxCell id="7Q65Zz7klpRtTicBYniu-3" parent="1" style="rounded=0;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=none;fillColor=none;fontColor=#64748B;fontSize=19;fontFamily=Arial;fontStyle=2" value="&lt;div style=&quot;&quot;&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;Low likelihood given the question&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="35" width="340" y="493" as="geometry" />
+        </mxCell>
+        <mxCell id="7Q65Zz7klpRtTicBYniu-4" parent="1" style="rounded=0;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=none;fillColor=none;fontColor=#64748B;fontSize=19;fontFamily=Arial;fontStyle=2" value="&lt;div style=&quot;&quot;&gt;High likelihood, potentially bias in training data&lt;/div&gt;" vertex="1">
+          <mxGeometry height="38" width="290" x="390" y="503" as="geometry" />
+        </mxCell>
+        <mxCell id="7Q65Zz7klpRtTicBYniu-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#A35D12;fontSize=48;fontStyle=1;fontFamily=Arial;" value="&lt;font&gt;&amp;lt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="65" width="60" x="330" y="415.5" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

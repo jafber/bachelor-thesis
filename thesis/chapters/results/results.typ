@@ -6,48 +6,64 @@ This chapter reports results for Qwen3.5-4B, 9B, and 27B on the three benchmarks
 
 === How do the different scoring methods compare?
 
-We compare the three context-relevance ablations with full-context perplexity. @method-auroc shows that fully ablated and history ablated context relevance generally perform best at predicting first error steps. Specifically, history ablated context relevance is strongest across the MR-GSM8K benchmark and on the BIG-Bench Mistake when evaluated with the 4B model, while fully ablated context relevance is the strongest predictor for all other models and benchmarks.
+We compare the three context-relevance ablations with full-context perplexity. @method-auroc shows that fully ablated and history ablated context relevance generally perform best at predicting first error steps. History ablation leads on MR-GSM8K for the three Qwen models, while full ablation leads for both Llama models. On BIG-Bench Mistake, history ablation leads only for Qwen3.5-4B; full ablation leads for the other four models. Full ablation leads on ProcessBench for all five models.
 
 #figure(
   table(
-    columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
-    align: (left, center, center, center, center, center, center, center, center, center),
-    inset: 4pt,
+    columns: (auto, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+    align: (left, center, center, center, center, center, center, center, center, center, center, center, center, center, center, center, center),
+    inset: 2pt,
     table.header(
       table.cell(rowspan: 2)[*Method*],
-      table.cell(colspan: 3)[*MR-GSM8K*],
-      table.cell(colspan: 3)[*BIG-Bench Mistake*],
-      table.cell(colspan: 3)[*ProcessBench*],
-      [4B], [9B], [27B], [4B], [9B], [27B], [4B], [9B], [27B],
+      table.cell(colspan: 5)[*MR-GSM8K*],
+      table.cell(colspan: 5)[*BIG-Bench Mistake*],
+      table.cell(colspan: 5)[*ProcessBench*],
+      [Q4], [Q9], [Q27], [L8], [L3], [Q4], [Q9], [Q27], [L8], [L3], [Q4], [Q9], [Q27], [L8], [L3],
     ),
-    [Perplexity], [60.8], [61.1], [63.3], [65.4], [66.5], [67.3], [63.5], [64.0], [64.5],
-    [Fully ablated], [64.8], [66.9], [69.8], [66.5], [*68.8*], [*67.5*], [*68.1*], [*68.6*], [*67.9*],
-    [Question ablated], [51.0], [47.7], [45.8], [67.9], [67.8], [66.0], [56.7], [56.5], [54.9],
-    [History ablated], [*71.5*], [*70.7*], [*70.7*], [*68.0*], [68.2], [66.7], [67.5], [67.2], [66.3],
+    [Perplexity], [60.8], [61.1], [63.3], [60.1], [55.6], [65.4], [66.5], [67.3], [57.5], [49.4], [63.5], [64.0], [64.5], [63.4], [63.5],
+    [Fully ablated], [64.8], [66.9], [69.8], [*75.1*], [*71.6*], [66.5], [*68.8*], [*67.5*], [*64.7*], [*64.5*], [*68.1*], [*68.6*], [*67.9*], [*69.4*], [*69.5*],
+    [Question ablated], [51.0], [47.7], [45.8], [45.5], [41.1], [67.9], [67.8], [66.0], [63.3], [55.3], [56.7], [56.5], [54.9], [47.3], [47.5],
+    [History ablated], [*71.5*], [*70.7*], [*70.7*], [71.9], [70.5], [*68.0*], [68.2], [66.7], [64.6], [64.0], [67.5], [67.2], [66.3], [67.5], [67.0],
   ),
-  caption: [First-error step @auroc in percent, pooling all task types within each benchmark. Columns distinguish Qwen3.5 model sizes; the highest value in each column is bold. A value of 50 indicates chance ranking; larger values indicate better discrimination. All post-error steps are counted among the other steps.],
+  caption: [First-error step @auroc in percent, pooling all task types within each benchmark. Q4/Q9/Q27 denote Qwen3.5-4B/9B/27B; L8 and L3 denote Llama3.1-8B and Llama3.2-3B. The highest value in each column is bold. A value of 50 indicates chance ranking; larger values indicate better discrimination. All post-error steps are counted among the other steps.],
 ) <method-auroc>
 
 Question ablated context relevance generally performs worse than the other scoring methods.
 
-Perplexity is not uniformly worse: on the BIG-Bench Mistake pooled data it reaches 65.4-67.3%, close to the strongest context-relevance variants scoring 67.5-68.0%.
+Perplexity alone shows a positive correlation with first error steps on all benchmark runs, with the exception of Llama3.2-3B on BIG-Bench Mistake. However, it is consistently outperformed by the fully and history ablated context relevance scores.
 
-*Discussion.* The data suggest that perplexety alone is a consistently strong signal for first error steps, acheiving >60% @auroc in all model benchmarks. both low history ablated and low fully ablated context relevance show a robust correlation to first error reasoning step, going beyond the information provided by the perplexity alone. The low performance of question ablated context relevance might be attributed to the fact that its correcting factor $L(s_i | q_g, s_(<i))$ includes substantial information about the question itself in the form of prior reasoning steps, losing a lot of information about the @llm's inherent biases.
+*Discussion.* Perplexity alone is a useful error signal in most model-benchmark combinations. However, history-ablated and fully ablated context relevance provide even stronger information for detecting errors. This supports our hypothesis that context relevance scoring improves reasoning performance by removing model bias. The low performance of question ablated context relevance might be attributed to the fact that its correcting factor $L(s_i | q_g, s_(<i))$ includes substantial information about the question itself in the form of prior reasoning steps, losing a lot of information about the @llm's inherent biases.
 
-=== How does performance generalize across different task domains?
+=== How does performance generalize across task domains?
 
-The benchmark averages hide pronounced differences between their constituent tasks. @task-auroc gives the same step-level measure separately for all twelve task types, using a heatmap to make changes across methods and models visible. On BIG-Bench Mistake's tracking-shuffled-objects task, question ablation reaches approximately 0.88–0.90 @auroc, whereas fully ablated context relevance is only 0.36–0.40. For logical deduction, question ablation instead falls to 0.39–0.48. On MR-GSM8K's original and reversed problems, history ablation is consistently around 0.72–0.73, while question ablation is at or below chance. Within ProcessBench, fully ablated scores are relatively stable (roughly 0.66–0.70 across tasks and models).
+The benchmark averages hide pronounced differences between their subtasks. @task-auroc reports step-level @auroc for fully ablated context relevance, separated into all twelve task types. 
 
 #figure(
   image("task-method-auroc.png", width: 100%),
   caption: [First-error step @auroc by task, scoring method, and Qwen3.5 model. MR = MR-GSM8K; BBM = BIG-Bench Mistake; PB = ProcessBench. Each cell pools steps only within the named task. Scores below 0.5 indicate that the specified direction of the score ranks first errors behind other steps.],
 ) <task-auroc>
 
-The shuffled-objects contrast is particularly informative: a step can be fluent given its local history while contradicting the particular swaps in the question, making the question-ablated difference useful where a generic surprise measure is not. This is an interpretation of the pattern, not proof of its mechanism. Conversely, the low question-ablated scores on several mathematical tasks show that question dependence is not a reliable universal proxy for correctness. Differences in trace style, step length, task prevalence, and the status of post-error steps may also affect these rankings; we therefore do not interpret pooled benchmark scores as equal-weight averages over domains.
+Fully ablated context relevance shows a robust correlation to first error steps in the mathematical reasoning tasks across all models. In more logic-based tasks, namely program of thought, dyck languages, logical deduction and word sorting, the correlation is weaker. Performance on multi-step arithmetic tasks is also relatively weak.
+
+The "tracking shuffled objects" task stands out. Here, the correlation switches directions: errors are consistently indicated by high, not low, fully ablated context relevance. However, @tracking-shuffled-auroc shows that question ablated context relevance is an unusually strong signal here. Within the shuffled objects task, low question ablated context relevance acheives 0.84-0.90 @auroc at detecting first error steps, as opposed to 0.33-0.40 for the fully ablated context relevance.
+
+#figure(
+  image("tracking-shuffled-objects-auroc.png", width: 100%),
+  caption: [First-error step @auroc by task, scoring method, and Qwen3.5 model. MR = MR-GSM8K; BBM = BIG-Bench Mistake; PB = ProcessBench. Each cell pools steps only within the named task. Scores below 0.5 indicate that the specified direction of the score ranks first errors behind other steps.],
+) <tracking-shuffled-auroc>
+
+We turn the question ablated context relevance scores into a binary classifier that, as described in @comparison-methods, maximizes first error detection accuracy. @tracking-shuffled-acc shows that on the shuffled objects task, our context relevance based classifier significantly outperforms @llm judges, correctly predicting the exact first error step (or NONE on clean traces) in 65% of all samples for Llama3.1-8B.
+
+#figure(
+  image("tracking-shuffled-objects-accuracy.png", width: 100%),
+  caption: [First-error step @auroc by task, scoring method, and Qwen3.5 model. MR = MR-GSM8K; BBM = BIG-Bench Mistake; PB = ProcessBench. Each cell pools steps only within the named task. Scores below 0.5 indicate that the specified direction of the score ranks first errors behind other steps.],
+) <tracking-shuffled-acc>
+
+*Discussion.* We find that fully ablated context relevance, though weaker in some logics and arithmetic settings, generally correlates with correct reasoning across task domains. One exception is the shuffled objects task, where the erroneous steps, on average, acheive a *higher* fully ablated context relevance but a significantly *lower* question ablated context relevance than other steps. A possible explanation could be logical dependance between the reasoning steps when tracking shuffled objects: the steps leading up to an error "set the model up" to make a mistake which contradicts the original question. This difference - how much prior steps instead of the original question influence a model's decision - expresses itself as low question ablated cr.
 
 === Does low context relevance correlate with reasoning errors?
 
-The bottom-line result is *yes, as a statistical step-level association, but not as a reliable standalone localization rule*. @cr-bottom-line isolates the fully ablated score: across all nine benchmark–model combinations, first-error discrimination is above chance, with @auroc from 0.648 (4B on MR-GSM8K) to 0.698 (27B on MR-GSM8K). The one-sided Mann–Whitney U p-values displayed on the bars are below 0.05 in every combination. These are unadjusted tests of a directional difference in the two step-score distributions, not probabilities that a hypothesis is true, nor guarantees of good predictions for individual traces.
+The bottom-line result is *yes, as a statistical step-level association, but not as a reliable standalone localization rule*. @cr-bottom-line isolates the fully ablated score: across all fifteen benchmark–model combinations, first-error discrimination is above chance, with @auroc from 0.645 (Llama3.2-3B on BIG-Bench Mistake) to 0.751 (Llama3.1-8B on MR-GSM8K). Both Llama models outperform the Qwen models on MR-GSM8K, while their results on BIG-Bench Mistake and ProcessBench are comparable. The one-sided Mann–Whitney U p-values displayed on the bars are below 0.05 in every combination. These are unadjusted tests of a directional difference in the two step-score distributions, not probabilities that a hypothesis is true, nor guarantees of good predictions for individual traces.
 
 #figure(
   image("fully-ablated-cr-comparison.png", width: 100%),
@@ -58,45 +74,44 @@ This consistent association supports the hypothesis that context dependence cont
 
 == @llm Judge Experiment
 
-=== How accurately can our chosen @llm:pl detect reasoning errors?
+=== How do our judges compare on MR-GSM8K?
 
-@judge-conditional separates the two parts of the task: saying NONE for a clean trace and naming the first incorrect step in an erroneous one. All percentages use the full relevant trace denominator; invalid judge outputs count as wrong. The 27B judge achieves 72.1% overall exact accuracy on MR-GSM8K and 68.9% on ProcessBench, but 43.4% on BIG-Bench Mistake. Its error-only accuracies are 60.8%, 65.9%, and 49.4%, respectively. The 9B judge's 85.0% clean-trace accuracy on MR-GSM8K contrasts with only 43.9% first-error accuracy on erroneous traces: a single overall number would conceal this imbalance.
-
-#figure(
-  image("judge-conditional-accuracy.png", width: 100%),
-  caption: [Exact judge accuracy conditional on clean or erroneous traces, using all responses, including invalid outputs. The clean-trace bar measures correct NONE responses; the error-trace bar measures correct first-error locations. These percentages are not binary error-detection F1 scores.],
-) <judge-conditional>
-
-Model size generally helps, but does not guarantee improvement on each conditional metric: for example, the 9B judge locates fewer MR-GSM8K first errors than the 4B judge (43.9% versus 47.3%). Invalid responses also matter. The 4B judge produced 898 invalid responses on ProcessBench, compared with four for 9B and eleven for 27B, depressing its full-denominator accuracy. BIG-Bench Mistake is especially difficult for the smaller judges: both achieve about 24.6% overall exact accuracy, with error-only accuracies near 25%.
-
-=== How do our evaluations compare to results in the benchmark papers?
-
-For each paper we recalculate *its* headline measure, rather than comparing unlike quantities. On BIG-Bench Mistake, the macro-average of five task-level exact accuracies is 32.0%, 31.5%, and 49.8% for our 4B, 9B, and 27B judges. @tyen-comparison places these next to the direct-trace results of #cite(<tyen_llms_2024>, form: "prose"). The 27B result exceeds the published GPT-4 value of 39.8%, but this is not a controlled superiority claim: our evaluation includes all 986 Dyck traces instead of the paper's subset, and prompts and model generations differ.
-
-#figure(
-  image("tyen.png", width: 85%),
-  caption: [BIG-Bench Mistake macro-average exact first-error-or-NONE accuracy by task. Gray bars reproduce direct-trace results from @tyen_llms_2024; blue bars show our Qwen3.5 judges. The published Dyck subset and our full Dyck set differ, as do the prompts.],
-) <tyen-comparison>
-
-On MR-GSM8K, @zeng-comparison uses binary process-error @mcc, not exact-location accuracy. Our judges reach 0.502, 0.588, and 0.737, versus 0.633 for the GPT-4-Turbo baseline shown. Binary detection can be correct even when the returned error *location* is wrong: our corresponding first-error accuracies on erroneous traces are 47.3%, 43.9%, and 60.8%. The paper requests a separate binary judgement, whereas ours derives it from the returned location, so these results give context rather than a strict replication @zeng_mr-gsm8k_2023.
+@zeng-comparison uses binary process-error @mcc, not exact-location accuracy. Our Qwen3.5 judges reach 0.502, 0.588, and 0.737, versus 0.633 for the published GPT-4-Turbo baseline; Llama3.2-3B reaches 0.137 and Llama3.1-8B falls slightly below zero (-0.017). Binary detection can be correct even when the returned error *location* is wrong: the Qwen judges' corresponding first-error accuracies on erroneous traces are 47.3%, 43.9%, and 60.8%. The paper requests a separate binary judgement, whereas ours derives it from the returned location, so these results give context rather than a strict replication @zeng_mr-gsm8k_2023.
 
 #figure(
   image("zeng.png", width: 80%),
-  caption: [MR-GSM8K binary process-error @mcc. Published zero-shot values are from @zeng_mr-gsm8k_2023; our binary decisions are derived from judges' first-error locations. Exact first-error accuracy is a different measure.],
+  caption: [MR-GSM8K binary process-error @mcc. Published zero-shot values are from @zeng_mr-gsm8k_2023; our binary decisions are derived from judges' first-error locations. Negative @mcc is retained. Exact first-error accuracy is a different measure.],
 ) <zeng-comparison>
 
-On ProcessBench, the paper's headline score is the mean over four tasks of the *harmonic means* of clean-trace and erroneous-trace accuracies, rather than conventional F1 or pooled accuracy. Our judges score 44.5%, 62.1%, and 70.4% on this measure. @zheng-comparison shows that the 27B model approaches the published QwQ-32B-Preview result (71.5%). The original open-weight critic results use eight-sample majority voting, whereas we use one response with a different prompt, so this comparison likewise does not isolate a model effect @zheng_processbench_2025.
+*Discussion:* The MCC scores differ substantially between the model families, with Llama3.1-8b and Llama3.2-3B ranking among the lowest, and Qwen3.5 among the highest performing models. Some of the poor performance may be explained by our evaluation setup, since we derive the judgement for overall correctness from the models' returned error locations instead of a seperate binary judgement as implemented by #cite(<zeng_mr-gsm8k_2023>, form: "prose"). Nevertheless, the Qwen3.5-27B outperforms all of the models evaluated in the original MR-GSM8K paper, suggesting a strong improvement in reasoning capabilities over the past three years.
+
+=== How do our judges compare on BIG-Bench Mistake?
+
+To compare with #cite(<tyen_llms_2024>, form: "prose"), we take the unweighted mean of exact first-error-or-NONE accuracy over the five tasks. @tyen-comparison shows 32.0%, 31.5%, and 49.8% for our Qwen3.5-4B, 9B, and 27B judges, but only 19.5% and 12.3% for Llama3.1-8B and Llama3.2-3B. The 27B result exceeds the published GPT-4 value of 39.8%, but this is not a controlled superiority claim: our evaluation uses 985 Dyck traces after excluding one broken example, rather than the paper's subset; prompts and model generations also differ.
+
+#figure(
+  image("tyen.png", width: 85%),
+  caption: [BIG-Bench Mistake macro-average exact first-error-or-NONE accuracy by task. Gray bars reproduce direct-trace results from @tyen_llms_2024; blue bars show our five Qwen3.5 and Llama judges. The published Dyck subset and our evaluated set differ, as do the prompts.],
+) <tyen-comparison>
+
+*Discussion:* Even the best performing model only acheives around 50% on the harmonic mean score, leaving substantial room for improvement. However, the scores show that even the relatively small Qwen3.5-27B released in 2026 outperforms models like GPT-4 that were at the frontier of capability just two years ago. This is especially impressive considering that GPT-4 is estimated to have around 1.8T parameters @erdil_frontier_2024 --- more than 60 times the size of Qwen3.5-27B! It remains an open research question how well todays frontier models would perform on the benchmark.
+
+=== How do our judges compare on ProcessBench?
+
+The paper's headline score is the mean over four tasks of the *harmonic means* of clean-trace and erroneous-trace accuracies, rather than conventional F1 or pooled accuracy. Our Qwen3.5 judges score 44.5%, 62.1%, and 70.4% on this measure, while Llama3.1-8B and Llama3.2-3B score 0.6% and 6.3%. @zheng-comparison shows that the 27B model approaches the published QwQ-32B-Preview result (71.5%). The original open-weight critic results use eight-sample majority voting, whereas we use one response with a different prompt, so this comparison likewise does not isolate a model effect @zheng_processbench_2025.
 
 #figure(
   image("zheng.png", width: 80%),
-  caption: [ProcessBench mean of the four task-specific clean/error harmonic means. Gray bars show published open-weight LLM critic results from @zheng_processbench_2025; blue bars show our single-response Qwen3.5 judges. The metric is called F1 in the source paper but is not conventional binary F1.],
+  caption: [ProcessBench mean of the four task-specific clean/error harmonic means. Gray bars show published open-weight LLM critic results from @zheng_processbench_2025; blue bars show our five single-response Qwen3.5 and Llama judges. The metric is called F1 in the source paper but is not conventional binary F1.],
 ) <zheng-comparison>
+
+*Discussion:* Again, Qwen3.5-27B is among the highest performing models, outperforming even its 72B parameter predecessor Qwen2.5 released two years before. The true performance advantage may be even higher, since in their evaluations, #cite(<zheng_processbench_2025>, form: "author") used eight-sample majority voting as opposed to our single-shot classification.
 
 == Comparison Between @llm Judge and Context Relevance
 
 === Can low context relevance signal errors as accurately as dedicated @llm judges?
 
-For a directly comparable decision, each likelihood-based method first selects the step with greatest error evidence in a trace (earliest in a tie). @judge-cr-error compares the fraction of *erroneous traces* on which this candidate is the annotated first error with the judge's exact first-error accuracy on those same traces. Here the Dyck exclusion applies to *both* approaches. Generally, the judge is substantially more effective: on ProcessBench the 27B judge locates 65.9% of first errors, versus 22.6% for fully ablated context relevance and 19.0% for question ablation. On MR-GSM8K the corresponding figures are 60.8%, 23.6%, and 10.1%. In these domains, above-chance step @auroc does not translate into accurate trace-level selection.
+For a directly comparable decision, each likelihood-based method first selects the step with greatest error evidence in a trace (earliest in a tie). @judge-cr-error compares the fraction of *erroneous traces* on which this candidate is the annotated first error with the judge's exact first-error accuracy on those same traces. Generally, the judge is substantially more effective: on ProcessBench the 27B judge locates 65.9% of first errors, versus 22.6% for fully ablated context relevance and 19.0% for question ablation. On MR-GSM8K the corresponding figures are 60.8%, 23.6%, and 10.1%. In these domains, above-chance step @auroc does not translate into accurate trace-level selection.
 
 #figure(
   image("judge-vs-context-error.png", width: 100%),

@@ -17,9 +17,9 @@
 *Reducing model's biases trough contextual calibration improves accuracy on short-answer tasks.* _Contextual calibration_ is a technique for reducing biases in @llm:pl. Its basic idea is to estimate a model's preference toward particular answers before seeing the actual test input, and then correct its output probabilities accordingly. Variations of this method have been shown to improve performance in a wide range of tasks that require models to give short, verifiable answers, including sentiment classification, multiple choice tests, and @nli @zhao_calibrate_2021 @holtzman_surface_2021. To the best of our knowledge, whether this method can also be used to improve performance on multi-step reasoning tasks remains an open research question. 
 
 #figure(
-  image("../placeholder.webp", width: 70%),
+  image("contextual-relevance.png"),
   placement: auto,
-  caption: "Context relevance on the example of a reasoning question."
+  caption: [Per-step fully ablated context relevance on an example reasoning trace that contains an error. For each step, we evaluate its average log likelihood given the full question and previous steps. To calculate context relevance, we subtract the average log likelihood for the step given only a generic context like "A reasoning problem". In the example, the second reasoning step results from the @llm's internal bias instead of following from the question. This gives the step a low context relevance, signaling the reasoning error.]
 )
 
 *We investigate whether contextual calibration can provide a signal to detect errors in reasoning traces.* To apply contextual calibration to multi-step reasoning traces, we use a @llm measure how strongly each reasoning step is supported by the actual question. In mathematical terms, we are given a question $q$ and multi-step reasoning trace $s_1, s_2, dots, s_n$ and tasked with detecting whether any reasoning step contains an error. For each step $s_i$, we evaluate the ratio

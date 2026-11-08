@@ -26,7 +26,7 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 - `context-relevance-plots.ipynb` — Full-run plots for context relevance metrics.
 - `average-vs-total-ll.ipynb` — Cache-only comparison of benchmark-level first-error AUROC and significance using total vs average log likelihood DC-PMI for all three models.
 - `comparison.ipynb` — Cache-only comparison of candidate-step detection and threshold-optimized exact trace accuracy for average-LL context relevance, perplexity, and LLM judges across models and benchmarks.
-- `shuffled-objects-task.ipynb` — Cache-only analysis of negative question-ablated DC-PMI first-error detection and LLM judge performance on BIG-Bench Mistake tracking-shuffled-objects traces.
+- `shuffled-objects-task.ipynb` — Cache-only, average-LL investigation of tracking-shuffled-objects: five-model score comparisons, step-role/history-gain confounding, position-matched discrimination, trace-local localization, bootstrap intervals, small BBM cross-task samples, and example/annotation audits.
 - `mr-gsm8k-issue.ipynb` — Investigates invalid reference answers in MR-GSM8K reversed examples.
 - `prompts.ipynb` — Inspects a judge's full tokenized prompt and generated response.
 - `BIG-Bench-Mistake/` — Bundled benchmark JSONL data, README, license, and results image; `annotate_dyck_languages.py` annotates Dyck-language trace mistakes.
