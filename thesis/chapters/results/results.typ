@@ -45,21 +45,7 @@ The benchmark averages hide pronounced differences between their subtasks. @task
 
 Fully ablated context relevance shows a robust correlation to first error steps in the mathematical reasoning tasks across all models. In more logic-based tasks, namely program of thought, dyck languages, logical deduction and word sorting, the correlation is weaker. Performance on multi-step arithmetic tasks is also relatively weak.
 
-The "tracking shuffled objects" task stands out. Here, the correlation switches directions: errors are consistently indicated by high, not low, fully ablated context relevance. However, @tracking-shuffled-auroc shows that question ablated context relevance is an unusually strong signal here. Within the shuffled objects task, low question ablated context relevance acheives 0.84-0.90 @auroc at detecting first error steps, as opposed to 0.33-0.40 for the fully ablated context relevance.
-
-#figure(
-  image("tracking-shuffled-objects-auroc.png", width: 100%),
-  caption: [First-error step @auroc by task, scoring method, and Qwen3.5 model. MR = MR-GSM8K; BBM = BIG-Bench Mistake; PB = ProcessBench. Each cell pools steps only within the named task. Scores below 0.5 indicate that the specified direction of the score ranks first errors behind other steps.],
-) <tracking-shuffled-auroc>
-
-We turn the question ablated context relevance scores into a binary classifier that, as described in @comparison-methods, maximizes first error detection accuracy. @tracking-shuffled-acc shows that on the shuffled objects task, our context relevance based classifier significantly outperforms @llm judges, correctly predicting the exact first error step (or NONE on clean traces) in 65% of all samples for Llama3.1-8B.
-
-#figure(
-  image("tracking-shuffled-objects-accuracy.png", width: 100%),
-  caption: [First-error step @auroc by task, scoring method, and Qwen3.5 model. MR = MR-GSM8K; BBM = BIG-Bench Mistake; PB = ProcessBench. Each cell pools steps only within the named task. Scores below 0.5 indicate that the specified direction of the score ranks first errors behind other steps.],
-) <tracking-shuffled-acc>
-
-*Discussion.* We find that fully ablated context relevance, though weaker in some logics and arithmetic settings, generally correlates with correct reasoning across task domains. One exception is the shuffled objects task, where the erroneous steps, on average, acheive a *higher* fully ablated context relevance but a significantly *lower* question ablated context relevance than other steps. A possible explanation could be logical dependance between the reasoning steps when tracking shuffled objects: the steps leading up to an error "set the model up" to make a mistake which contradicts the original question. This difference - how much prior steps instead of the original question influence a model's decision - expresses itself as low question ablated cr.
+*Discussion.* Fully ablated context relevance generally correlates with correct reasoning across task domains, but the weaker results in some logic and arithmetic tasks show that the aggregate benchmark scores do not describe every task equally well.
 
 === Does low context relevance correlate with reasoning errors?
 
@@ -111,25 +97,18 @@ The paper's headline score is the mean over four tasks of the *harmonic means* o
 
 === Can low context relevance signal errors as accurately as dedicated @llm judges?
 
-For a directly comparable decision, each likelihood-based method first selects the step with greatest error evidence in a trace (earliest in a tie). @judge-cr-error compares the fraction of *erroneous traces* on which this candidate is the annotated first error with the judge's exact first-error accuracy on those same traces. Generally, the judge is substantially more effective: on ProcessBench the 27B judge locates 65.9% of first errors, versus 22.6% for fully ablated context relevance and 19.0% for question ablation. On MR-GSM8K the corresponding figures are 60.8%, 23.6%, and 10.1%. In these domains, above-chance step @auroc does not translate into accurate trace-level selection.
+For a directly comparable decision, fully ablated context relevance selects the step with the lowest score in each trace (earliest in a tie). @judge-cr-error compares the fraction of *erroneous traces* on which this candidate is the annotated first error with the judge's exact first-error accuracy on those same traces. On ProcessBench, the Qwen3.5-27B judge locates 65.9% of first errors, versus 22.6% for fully ablated context relevance. On MR-GSM8K the corresponding figures are 60.8% and 23.6%. On BIG-Bench Mistake they are 49.4% and 4.4%. Across all five models, the judges lead on BIG-Bench Mistake; on MR-GSM8K and ProcessBench, fully ablated context relevance leads only for Llama3.2-3B.
 
 #figure(
   image("judge-vs-context-error.png", width: 100%),
-  caption: [Threshold-free first-error localization accuracy on the same erroneous traces for each model and benchmark. Likelihood methods choose their most error-indicative step; judges return their predicted location. Invalid judge responses count as wrong. This is not step-level @auroc.],
+  caption: [Threshold-free first-error localization accuracy on the same erroneous traces for each model and benchmark. Fully ablated context relevance selects its lowest-scoring step; judges return their predicted location. Invalid judge responses count as wrong. This is not step-level @auroc.],
 ) <judge-cr-error>
 
-BIG-Bench Mistake is the important exception to the overall trend. On its tracking-shuffled-objects task, the question-ablated score selects the correct first error in 70.8%, 68.5%, and 65.8% of erroneous traces for 4B, 9B, and 27B, compared with 24.2%, 26.5%, and 44.6% for the corresponding judges (@shuffled-error). These numbers use *all 300 task traces per model* and the same exact-location metric on both sides, not the exploratory step-level F1 versus trace-level F1 comparison. Other ablations and perplexity hardly localize errors in this task. Thus the exception supports the narrower claim that the actual question can provide a particularly useful signal for some reasoning domains, not that all context-relevance scores outperform judges.
-
-#figure(
-  image("shuffled-error.png", width: 85%),
-  caption: [First-error localization on erroneous tracking-shuffled-objects traces, drawn from the same 300 task examples for each model. Question-ablated context relevance outperforms the corresponding judge on this task; the other likelihood scores do not. No thresholds are fitted for this figure.],
-) <shuffled-error>
-
-Finally, an error detector also needs to report NONE for clean traces. @judge-cr-overall compares exact first-error-or-NONE accuracy, allowing likelihood methods to suppress their candidate using a threshold. These thresholds were optimized *and evaluated on the same labeled traces*, separately for each model, benchmark, and score. Their reported values are therefore optimistic upper bounds for this particular decision rule, not held-out generalization estimates. Even under this favorable procedure, the 27B judge reaches 72.1% on MR-GSM8K and 68.9% on ProcessBench, versus at most 47.8% and 34.7% for the displayed likelihood methods. On BIG-Bench Mistake, question ablation reaches 33.7% for 9B versus 24.6% for its judge, but the judge leads at 27B (43.4% versus 30.3%).
+An error detector also needs to report NONE for clean traces. @judge-cr-overall compares exact first-error-or-NONE accuracy, allowing fully ablated context relevance to suppress its candidate using a threshold. Thresholds were optimized *and evaluated on the same labeled traces*, separately for each model and benchmark. For Qwen3.5-27B, the judge reaches 72.1% on MR-GSM8K and 68.9% on ProcessBench, versus 47.7% and 34.7% for fully ablated context relevance. On BIG-Bench Mistake, the judge reaches 43.4% versus 21.9%; for both smaller Qwen models the judge scores 24.6% versus 21.9%. The fully ablated method exceeds both Llama judges on MR-GSM8K and ProcessBench under this in-sample comparison.
 
 #figure(
   image("judge-vs-context-overall.png", width: 100%),
-  caption: [Exact first-error-or-NONE accuracy on all matched traces. Likelihood-based scores use separately optimized, in-sample thresholds to choose between their candidate step and NONE; judge predictions are not threshold-tuned. The likelihood bars must not be interpreted as held-out performance.],
+  caption: [Exact first-error-or-NONE accuracy on all matched traces. Fully ablated context relevance uses separately optimized, in-sample thresholds to choose between its candidate step and NONE; judge predictions are not threshold-tuned. The context-relevance bars must not be interpreted as held-out performance.],
 ) <judge-cr-overall>
 
-Taken together, contextual relevance is a reproducible *ranking signal* for first errors, but its effectiveness depends strongly on the task and decision rule. A prompt-based judge is generally the better complete-trace error detector in these evaluations; question ablation's shuffled-objects result identifies a domain in which the cheaper likelihood signal merits further investigation with held-out thresholds and independent benchmarks.
+*Discussion.* The above-chance step-level @auroc of fully ablated context relevance does not reliably translate into finding the first wrong step in an entire trace, particularly on BIG-Bench Mistake. Selecting a single lowest-scoring step is a harder decision than ranking first-error steps against other steps pooled across traces. Even the thresholded context-relevance results are optimistic in-sample scores, not held-out generalization estimates. The Llama comparisons also show that a weak judge can be beaten by this simple rule, but the stronger Qwen judges generally remain the better complete-trace error detectors. Held-out threshold tuning would be needed before claiming practical accuracy for the likelihood-based classifier.
