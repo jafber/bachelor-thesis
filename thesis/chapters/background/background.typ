@@ -4,7 +4,7 @@
 
 This chapter introduces how @llm:pl generate reasoning traces, common error detection methods, and how likelihoods might help us understand an @llm's reasoning process. We introduce _context relevance_ as a scoring method and discuss how it can serve as a continuous error signal as well as a binary classifier.
 
-== Autoregressive generation and chain of thought
+== Autoregressive Generation and Chain of Thought
 
 *Language models generate text one token at a time.* Before processing text, a language model splits it into _tokens_: words, parts of words, or punctuation marks. Given an input _prompt_ the model assigns a probability to each possible next token. The model then selects a token, either by choosing the most probable one (_greedy decoding_) or by randomly sampling from the distribution. It appends the selected token to the input and repeats the process. This is called _autoregressive generation_: each new token depends on the input and the tokens already generated @jurafsky_speech_2026.
 
@@ -18,7 +18,7 @@ where $x_(<t)$ denotes the tokens preceding token $x_t$, and $P_"LM"$ denotes th
 
 *@cot:long refers to intermediate reasoning expressed by a language model before its final answer.* Eliciting @cot improves performance on several arithmetic, commonsense, and symbolic reasoning tasks @wei_chain--thought_2023. By prompting a model to explicitly reason step-by-step, we can create a _reasoning trace_ made up of individual _reasoning steps_ from the @cot.
 
-== Monitoring reasoning traces
+== Monitoring Reasoning Traces
 
 *Monitoring the @cot can identify problems in a model's reasoning that might otherwise remain hidden.* @cot monitors are sometimes employed to look for behavior that violates instructions or safety constraints. For example, OpenAI use alignment monitors during certain training runs and evaluations @williams_how_2026. Reasoning error monitors instead examine whether a @cot employs correct reasoning. In mathematics, these assessments can help select solutions or provide step-level rewards during reinforcement learning @wang_math-shepherd_2024. While studies have shown a correlation between incorrect reasoning and misalignment in @llm:pl @wang_persona_2025, this work focuses on mathematical reasoning monitoring only.
 
@@ -26,7 +26,7 @@ where $x_(<t)$ denotes the tokens preceding token $x_t$, and $P_"LM"$ denotes th
 
 *@llm judges are off-the-shelf models prompted to inspect a trace.* A general-purpose @llm receives the problem and solution and is asked to identify errors, without requiring task-specific fine-tuning. Earlier evaluations found substantial difficulties in error localization @tyen_llms_2024, while ProcessBench reports stronger results for more recent critics @zheng_processbench_2025. The categories overlap: generative @prm:pl can also produce verification reasoning @khalifa_process_2025.
 
-== Likelihood and contextual calibration
+== Likelihood and Contextual Calibration
 
 *Token probabilities provide a continuous measure of how expected a step is.* For each token in a supplied reasoning trace, an autoregressive @llm assigns a probability using only the text preceding that token. Causal masking allows a transformer to compute these probabilities in parallel without using later tokens. Given a reasoning step $s$ made up of $m$ tokens $x_1, x_2, dots, x_m$, we can compute that step's _average log likelihood_:
 
@@ -46,7 +46,7 @@ $ bold(hat(q)) = bold(hat(p)) slash.o bold(hat(p))_"cf" $
 
 By sampling outputs from the calibrated distribution $bold(hat(q))$, #cite(<zhao_calibrate_2021>, form: "author") were able to improve model performance on a variety of text classification, fact retrieval and information extraction benchmarks. The same idea was successfully adapted to tasks like answering multiple choice questions @holtzman_surface_2021 and, more recently, writing abstractive summarizations @chae_mitigating_2024.
 
-== From contextual calibration to context relevance <cr>
+== From Contextual Calibration to Context Relevance <cr>
 
 *Context relevance asks what the supplied context adds to a step's likelihood.* A statement can sound plausible simply because it resembles common training examples. We instead ask whether the model prefers that statement more strongly after seeing the actual problem and reasoning history. Take this hypothetical #gls("llm")-generated reasoning trace as an example:
 
@@ -84,13 +84,13 @@ This asks whether a step becomes more plausible after the intermediate work lead
 
 *Context relevance is a model-based contrast, not a logical proof.* Positive scores indicate increased mean log likelihood under full context; zero and negative scores indicate no increase or a decrease. With identical target tokenization and length, the difference equals a length-normalized log probability ratio. Otherwise, it compares separately normalized likelihoods. The variants are DC-PMI-inspired rather than automatically formal PMI estimates, and the fully ablated score is not the sum of the other two. Scoring requires no additional model training, although converting these signals into classifiers introduces a separate threshold-selection problem.
 
-== Continuous scores and decision thresholds
+== Continuous Scores and Decision Thresholds
 
 *Ranking quality measures whether a signal separates first errors from other steps.* We orient scores so that larger values indicate stronger error evidence: $e_i = -op("CR")(i)$, or perplexity for the likelihood-only baseline. The receiver operating characteristic (ROC) curve plots the fraction of positives flagged against the fraction of negatives incorrectly flagged as a decision threshold varies. These are the true-positive and false-positive rates. The area under this curve (AUROC) equals the probability that a randomly selected positive receives greater evidence than a randomly selected negative, with half credit for ties. A value of 0.5 indicates chance ranking and 1 perfect separation @fawcett_introduction_2006. Here, positives are annotated first-error steps. Later steps are not necessarily verified as correct, so counting them as negatives limits this interpretation.
 
 *A threshold turns continuous evidence into a discrete prediction.* A step is flagged when $e_i >= tau$. Lowering $tau$ can catch more errors at the cost of more false alarms. Our trace-level rule selects the highest-evidence step, breaking ties in favor of the earliest, and returns it only if its evidence reaches the threshold; otherwise it returns `NONE`. Good pooled step ranking does not guarantee that this candidate is the first error within a trace. Thresholds should be selected on validation data and evaluated on separate test data; fitting and evaluating on the same traces gives an optimistic in-sample result. Similarly, a statistically significant rank-distribution difference, as tested with Mann–Whitney U, does not by itself establish useful prediction accuracy.
 
-== Evaluating discrete predictions
+== How to Evaluate Discrete Predictions
 
 *Binary error detection and exact error localization answer different questions.* For binary detection, a positive trace contains an error and a negative trace is clean. True positives (TP) and true negatives (TN) are correct decisions; false positives (FP) are false alarms and false negatives (FN) are missed errors. Binary accuracy is $("TP" + "TN") / N$, where $N$ is the number of traces. Exact localization accuracy instead requires the annotated first-error index, or `NONE` for a clean trace. Predicting the wrong error location can therefore succeed in binary detection while failing localization. Reporting accuracy separately on erroneous and clean traces helps expose this distinction and the influence of class prevalence.
 

@@ -68,7 +68,7 @@
 )
 
 #abstract[
-  This is a very good abstract.
+  #include "abstract.typ"
 ]
 
 // #abstract-de[

@@ -855,3 +855,19 @@ Let’s begin by looking at the model as a single black box. In a machine transl
 	pages = {6},
 	file = {Full Text PDF:C\:\\Users\\Jan\\Zotero\\storage\\9BU33EYS\\Chicco and Jurman - 2020 - The advantages of the Matthews correlation coefficient (MCC) over F1 score and accuracy in binary cl.pdf:application/pdf},
 }
+
+@misc{muennighoff_s1_2025,
+	title = {s1: {Simple} test-time scaling},
+	shorttitle = {s1},
+	url = {http://arxiv.org/abs/2501.19393},
+	doi = {10.48550/arXiv.2501.19393},
+	abstract = {Test-time scaling is a promising new approach to language modeling that uses extra test-time compute to improve performance. Recently, OpenAI's o1 model showed this capability but did not publicly share its methodology, leading to many replication efforts. We seek the simplest approach to achieve test-time scaling and strong reasoning performance. First, we curate a small dataset s1K of 1,000 questions paired with reasoning traces relying on three criteria we validate through ablations: difficulty, diversity, and quality. Second, we develop budget forcing to control test-time compute by forcefully terminating the model's thinking process or lengthening it by appending "Wait" multiple times to the model's generation when it tries to end. This can lead the model to double-check its answer, often fixing incorrect reasoning steps. After supervised finetuning the Qwen2.5-32B-Instruct language model on s1K and equipping it with budget forcing, our model s1-32B exceeds o1-preview on competition math questions by up to 27\% (MATH and AIME24). Further, scaling s1-32B with budget forcing allows extrapolating beyond its performance without test-time intervention: from 50\% to 57\% on AIME24. Our model, data, and code are open-source at https://github.com/simplescaling/s1},
+	urldate = {2026-11-09},
+	publisher = {arXiv},
+	author = {Muennighoff, Niklas and Yang, Zitong and Shi, Weijia and Li, Xiang Lisa and Fei-Fei, Li and Hajishirzi, Hannaneh and Zettlemoyer, Luke and Liang, Percy and Candès, Emmanuel and Hashimoto, Tatsunori},
+	month = mar,
+	year = {2025},
+	note = {arXiv:2501.19393 [cs.CL]},
+	keywords = {Computer Science - Artificial Intelligence, Computer Science - Computation and Language, Computer Science - Machine Learning},
+	file = {Preprint PDF:C\:\\Users\\Jan\\Zotero\\storage\\IBN98HZC\\Muennighoff et al. - 2025 - s1 Simple test-time scaling.pdf:application/pdf;Snapshot:C\:\\Users\\Jan\\Zotero\\storage\\4LNEAYVW\\2501.html:text/html},
+}

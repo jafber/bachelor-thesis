@@ -37,6 +37,14 @@ Final thesis experiments on locating the first error in LLM reasoning traces acr
 
 ## Instructions
 
+### Plot style guide
+
+- Use a cohesive, muted five-model palette in this order: `#4C72B0` (blue), `#DD8452` (orange), `#55A868` (green), `#C44E52` (red), `#8172B3` (purple). Assign each model one color consistently across all plots; do not let plotting-library defaults reorder the colors.
+- Set plot text sizes explicitly: axis labels 11 pt; tick labels and legends 9 pt; numeric annotations 9 pt. Keep labels legible at the figure's final size in the thesis.
+- No figure headings or chart titles, including subplot titles: the final document already captions figures. Identify groups with axis labels, legends, or the caption instead.
+- Write out **“Negative fully ablated CR”**, never “-Fully ablated CR” (or “−Fully ablated CR”), in plot labels and legends.
+- Always label charts with the exact numeric values represented (for example, label each bar with its value). Use the same units and precision as the reported results; do not substitute qualitative labels or approximate values.
+
 ### Keep unit tests to a minimum
 
 As a rule of thumb, a module's tests should not be longer than the module itself. Just cover the most common use cases and pitfalls. No need to cover every possible execution path.

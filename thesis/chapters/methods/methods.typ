@@ -1,13 +1,19 @@
 #import "@preview/glossarium:0.5.10": gls
 
-= Experiment Methodology
+= Experiment Methods
 
 We evaluate two ways of locating the first error in a given reasoning trace.
 
 - *@llm judge:* asking a language model to judge the complete trace.
 - *Context relevance:* scoring each step by how much its likelihood, as assigned by an @llm, depends on the problem.
 
-We run both methods on the same three error detection benchmarks, using the same selection of @llm:pl. We compare the error detection performance between the two methods and put it into the broader context of the benchmark papers' results.
+We run both methods on the same three error detection benchmarks, using the same selection of @llm:pl. We compare the error detection performance between the two methods and put it into the broader context of the benchmark papers' results. @experiment-overview illustrates both evaluation paths on an example trace.
+
+#figure(
+  image("experiment-overview.png", width: 100%),
+  placement: auto,
+  caption: [The judge generates a discrete verdict; context relevance produces continuous per-step scores, which are thresholded to predict an error location or NONE. Here, $L$ denotes mean token log likelihood. Scores, threshold and judge response are schematic, not measured results. Red highlights the reference error, which is not supplied to either method.],
+) <experiment-overview>
 
 == Benchmarks
 
@@ -80,17 +86,11 @@ This quantity is referred to as “F1” in the ProcessBench paper, but it is *n
 
 We use the Qwen3.5 4B, 9B, and 27B models @qwen_team_qwen35_2026. This range allows us to compare a performance across model sizes while remaining feasible on the available compute. For the @llm judge evaluations, we run the models in non-thinking mode. However, Qwen3.5 also offers thinking generation, allowing for further evaluations in the future (see @thinking). The same pretrained model supplies the the error prediction in the judge experiment, and the step likelihoods in the context relevance experiment.
 
-== Technical Setup
+== Technical Implementation
 
-The experiment implementation and evaluation scripts are available in the repository at #link("https://github.com/jafber/bachelor-thesis")[github.com/jafber/bachelor-thesis]. To allow for flexible evaluation of varying sample sizes, we chose a modular structure for running inference, caching model outputs and evaluating results (see @architecture). Inference was run using two GH200 accelerators on the HPI high-performance cluster.
+The experiment implementation and evaluation scripts are available in the repository at #link("https://github.com/jafber/bachelor-thesis")[github.com/jafber/bachelor-thesis]. To allow for flexible evaluation of varying sample sizes, we chose a modular structure for running inference, caching model outputs and evaluating results. Inference was run using two GH200 accelerators on the HPI high-performance cluster.
 
-#figure(
-  image("../placeholder.webp", width: 70%),
-  placement: auto,
-  caption: "Architecture diagram of evaluation pipeline."
-) <architecture>
-
-== @llm Judge experiment
+== LLM Judge Experiment
 
 As a baseline for the models' error detection abilities, we evaluate their performance in judging solution correctness when simply presented with a prompt.
 
@@ -98,7 +98,7 @@ As a baseline for the models' error detection abilities, we evaluate their perfo
 
 For every trace, we give the judge a zero-shot prompt containing the problem and the complete, numbered reasoning trace. The model ist tasked with outputting exactly one line, `FINAL: NONE` if the trace is fully correct or `FINAL: N` for the first erroneous Step N. Numbering starts at one for every benchmark, independent of how the released annotations encode indices. To keep performance comparable across datasets, we do not use benchmark-specific prompts or few-shot examples.
 
-=== Evaluation
+=== Output Evaluation
 
 We generate one response for every trace and parse its final line case-insensitively. Only `FINAL: NONE` or an integer referring to an existing numbered step is a valid prediction. A missing final line, an out-of-range step, or any other unparseable response is counted as invalid. For an erroneous trace, success requires the annotated first error exactly; a later error is a miss. For a clean trace, only NONE is correct. We compute performance metrics on valid outputs only, reporting the number of invalid outputs separately.
 
@@ -110,7 +110,7 @@ Our primary measure is exact-match accuracy over all traces: the fraction whose 
 
 For ProcessBench we report the harmonic mean of these two conditional accuracies by split. For MR-GSM8K we additionally evaluate whether the judge detects the *presence* of a process error, ignoring its position, using @mcc. @mcc accounts for all four cells of the binary confusion matrix and is informative when error prevalence is uneven. An erroneous location still counts as detection in this binary measure but not as successful localization. These distinct measures must not be read interchangeably. Invalid outputs count as errors in exact-match scoring and are penalized rather than treated as clean predictions in the all-trace binary comparison.
 
-== Context relevance experiment
+== Context Relevance Experiment
 
 We use each model to compute the three context relevance scores outlined in @cr for each reasoning step. For comparison, we also compute the perplexity per step.
 
@@ -120,7 +120,7 @@ For each trace with question $q$ and steps $s_1, dots, s_n$, we measure how much
 
 We evaluate four context configurations. In the full configuration the model sees $q$ followed by the entire trace; in the question-ablated configuration it sees the generic question followed by the entire trace. In the history-ablated configuration it sees $q$ followed by each step in isolation; in the fully ablated configuration it sees the generic question followed by each step in isolation. The latter two configurations require a separate likelihood evaluation for every step. The scoring target is always the text of the step itself, not the question, chat template, or earlier steps. The step's own number is included consistently in each context. We preserve the benchmark's step boundaries throughout.
 
-=== Evaluation
+=== Output Evaluation
 
 For context $c$, let $L(s_i | c)$ be the *mean token log likelihood* of step $s_i$ under that context. Averaging within each configuration reduces dependence on step length and allows for tokenization differences induced by the preceding text. We subtract the ablated score from the full-context score to obtain the three variants introduced in @cr:
 
@@ -138,5 +138,5 @@ For step-level analysis, we label exactly the annotated first erroneous step pos
 
 We also evaluate a trace-level localization rule: choose the step with the smallest contextual-relevance score as the candidate first error, breaking ties in favor of the earliest step. On erroneous traces, the fraction for which this candidate matches the annotated first error measures *localization conditional on predicting an error* and requires no threshold. To allow a NONE prediction, we compare the candidate's error-evidence score to a threshold and return NONE when it falls below that threshold. We report exact first-error-or-NONE accuracy over all traces for this thresholded classifier, using the same traces and labels as in the judge comparison. Thresholds in the current analysis are optimized separately by model, benchmark, and metric on the evaluation traces themselves; the resulting accuracy is therefore an optimistic *in-sample* comparison, not a cross-validated or held-out estimate. We keep it distinct from the threshold-free localization accuracy and @auroc, neither of which requires fitting a decision threshold.
 
-== Comparing @llm judge and context relevance <comparison-methods>
+== Comparing LLM Judges and Context Relevance as Error Predictors<comparison-methods>
 
