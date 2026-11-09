@@ -2,7 +2,7 @@
 
 = The _Context Relevance_ Metric <cr>
 
-Contextual calibration adjusts a model's answer probabilities against a content-free baseline. We adapt this idea to score individual steps in a multi-step reasoning trace. Our metric, _context relevance_, measures how much the question and preceding reasoning increase the likelihood of an observed step. This chapter introduces three variants and explains how we use their scores to predict errors.
+Contextual calibration adjusts a model's answer probabilities against a content-free baseline. We adapt this idea to score individual steps in a multi-step reasoning trace. Our metric, _context relevance_, measures how much the question and preceding reasoning increase the likelihood of an observed step. We compare three ablations: removing the question, the reasoning history, or both.
 
 == From Contextual Calibration to Context Relevance
 
@@ -20,7 +20,7 @@ Step 2: Discount shirt: $100 - $20 = $80
 Answer: $80
 ```
 
-Here, step 2 contains an error: instead of increasing the price, the model decreases it. A @llm might have chosen the step regardless because it mirrors a pattern in the training data: clothing items are often on discount. Adding the context of the question (the price _increases_ by 20%) actually makes the step less likely.
+Step 2 decreases the price instead of increasing it. An @llm might favor this continuation because discount calculations are familiar. If the question's explicit price increase makes the step less likely than under a generic context, its context relevance will be negative. This is a hypothetical mechanism, not evidence about the model's training data or the cause of a particular error.
 
 To compare different sources of information, we use a generic question $q_g$, here `A reasoning problem.`, as a minimal domain cue. All variants retain the same task instructions and score the same observed step. Ablation means replacing the question or omitting preceding steps, not changing model weights.
 
@@ -28,7 +28,7 @@ Fully ablated context relevance measures the combined contribution of question a
 
 $ op("CR")_"fully ablated" (i) = L(s_i | q, s_(<i)) - L(s_i | q_g). $
 
-Intuitively, this asks: does the step fit this particular solution better than a generic reasoning problem? A high score indicates that the full context makes the step more expected. A low score suggests that much of its plausibility remains even without that context.
+Intuitively, this asks: does the step fit this particular solution better than a generic reasoning problem? A positive score means that the full context increases the step's average log likelihood. A score near zero means that removing the context changes it little; a negative score means that removing the context makes the step more likely.
 
 Question-ablated context relevance measures what the question adds beyond the history. We replace the question while retaining all previous steps:
 
@@ -48,5 +48,5 @@ Context relevance is a model-based contrast, not a logical proof. Positive score
 
 Ranking quality measures whether a signal separates first errors from other steps. We orient scores so that larger values indicate stronger error evidence: $e_i = -op("CR")(i)$, or perplexity for the likelihood-only baseline. The receiver operating characteristic (ROC) curve plots the fraction of positives flagged against the fraction of negatives incorrectly flagged as a decision threshold varies. These are the true-positive and false-positive rates. The area under this curve (AUROC) equals the probability that a randomly selected positive receives greater evidence than a randomly selected negative, with half credit for ties. A value of 0.5 indicates chance ranking and 1 perfect separation @fawcett_introduction_2006. Here, positives are annotated first-error steps. Later steps are not necessarily verified as correct, so counting them as negatives limits this interpretation.
 
-A threshold turns continuous evidence into a discrete prediction. A step is flagged when $e_i >= tau$. Lowering $tau$ can catch more errors at the cost of more false alarms. Our trace-level rule selects the highest-evidence step, breaking ties in favor of the earliest, and returns it only if its evidence reaches the threshold; otherwise it returns `NONE`. Good pooled step ranking does not guarantee that this candidate is the first error within a trace. Thresholds should be selected on validation data and evaluated on separate test data; fitting and evaluating on the same traces gives an optimistic in-sample result. Similarly, a statistically significant rank-distribution difference, as tested with Mann–Whitney U, does not by itself establish useful prediction accuracy.
+A threshold turns continuous evidence into a discrete prediction. A step is flagged when $e_i >= tau$. Lowering $tau$ can catch more errors at the cost of more false alarms. Our trace-level rule selects the highest-evidence step, breaking ties in favor of the earliest, and returns it only if its evidence reaches the threshold; otherwise it returns `NONE`. Good pooled step ranking does not guarantee that this candidate is the first error within a trace. Thresholds should be selected on validation data and evaluated on separate test data; fitting and evaluating on the same traces gives an optimistic in-sample result. A difference between pooled score distributions likewise need not yield useful localization accuracy.
 

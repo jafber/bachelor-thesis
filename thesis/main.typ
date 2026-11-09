@@ -44,7 +44,7 @@
   (
     key: "auroc",
     short: "AUROC",
-    long: "Area Under Receiver Operating Curve",
+    long: "Area Under the Receiver Operating Characteristic Curve",
   ),
 )
 
@@ -62,7 +62,7 @@
   professors: ("Prof. Dr. Gerard de Melo",),
   advisors: ("Yindong Wang",),
   type: "Bachelor",
-  lang: "en",  // Switch all labels to German defaults
+  lang: "en",  // English document labels
   // typography: (font: "STIX Two Text", body-text-size: 12pt),
   // layout: (for-print: true, toc-depth: 2),
   // appearance: (accent-color: rgb("#B1063A")),

@@ -1,6 +1,6 @@
 == Running LLM Judges in Thinking Mode <thinking>
 
-Qwen3.5 supports "thinking mode" by default, gerating a @cot before answering a prompt @qwen_team_qwen35_2026. To provide a reproducable baseline of model capabilities,we explicitly disabled thinking mode in our @llm evaluations, prompting the model for a judgement directly. We also attempted a separate evaluation with the @llm judges in thinking mode, but frequently ran into _thinking loops_: presented with a task, the models would endlessly second-guess themselves, never arriving at a conclusion.
+Qwen3.5 supports "thinking mode", generating a @cot before its final answer @qwen_team_qwen35_2026. Our main evaluation disables this mode and requests a direct judgment. In exploratory thinking-mode runs, we observed repetitive reconsideration of the same premises, sometimes without a verdict before the generation limit. We refer to this behavior as _thinking loops_; finite outputs cannot establish that a model would continue indefinitely.
 
 For example, take this reasoning trace from MR-GSM8K:
 
@@ -13,7 +13,7 @@ Step 2: In total there are 12 boys + 6 girls = <<12+6=18>>18 kids in the park.
 Step 3: #### 18
 ```
 
-When prompted to judge the trace in thinking mode, Qwen3.5-4B keeps overthinking the meaning of the phrase "twice the number of boys":
+When prompted to judge this trace in thinking mode, Qwen3.5-4B repeatedly revisits the phrase "twice the number of boys". The wording is genuinely incomplete: it does not state what the number of boys is twice. The following excerpts show the repetition, not that the model's concern is unfounded:
 
 ```
 **Analysis of the Problem Statement:**
@@ -43,26 +43,24 @@ When prompted to judge the trace in thinking mode, Qwen3.5-4B keeps overthinking
 - Or does it mean "The number of boys is twice the number of kids"?
 ```
 
-This is a known problem, especially in smaller thinking models @pipis_wait_2025. There are methods to avoid thinking loops, for example increasing generation temperature @pipis_wait_2025 or budget forcing @muennighoff_s1_2025. However, running the evaluations on thinking mode judges ultimately fell out of the scope of this thesis.
+Repetitive thinking has also been reported in smaller reasoning models @pipis_wait_2025. Proposed mitigations include changing the sampling temperature @pipis_wait_2025 and limiting deliberation through budget forcing @muennighoff_s1_2025. We did not complete a benchmark-wide thinking-mode comparison, so these observations do not establish its accuracy relative to direct judgments.
 
-== Why Score Trajectories Can Be Deceiving
+== Why Score Trajectories Can Be Misleading <trajectories>
 
-To understand how the different relevance scores develop around errors in a reasoning trace, we created plots that average a given score across all reasoning traces that contain errors, per step relative to the first error.
+We compare average score trajectories around annotated first errors with trajectories around matched positions in clean traces. Using random seed 42, we pair each selected erroneous trace with an unused clean trace from the same benchmark task and with the same number of steps. Errors without an available match are discarded, leaving 2,678 pairs. The clean trace is anchored at its paired error's step index, not at an independently sampled position. We pool scores from all five models and average them at offsets from −5 to +5 around each anchor.
 
 #figure(
   image("figures/trajectory.png"),
-  caption: "Average perplexity, fully ablated CR, question ablated CR and history ablated CR per step relative to the first error step. Blue line represents the average across all reasoning traces that have a labeled error, taken from all 3 benchmarks. Bands represent 95% bootstrap confidence for the average score."
-)
+  caption: [Average scores for the matched erroneous traces. Panels, left to right: perplexity, fully ablated CR, question-ablated CR, and history-ablated CR. Offset zero is the annotated first error. Bands show pointwise 95% percentile-bootstrap intervals obtained by resampling individual trace–model scores at each offset; they do not account for dependence between models scoring the same trace.],
+) <error-trajectories>
 
-The fully ablated and history ablated context relevance scores look like especially strong error signals in this visualization. We can see that across all reasoning traces, both average fully ablated and average history ablated context relevance drops exactly on the step where an error first occurs.
-
-However, this visualization is misleading. When we sample a control group of error free-traces and randomly center them on steps so that the overall distribution of selected step indices matches that of the error group, we can observe the following trajectories:
+In @error-trajectories, fully ablated and history-ablated context relevance reach local minima at the first error. Read in isolation, this could suggest an error-specific drop.
 
 #figure(
   image("figures/trajectory-control.png"),
-  caption: "Trajectories for the step index matched control group."
-)
+  caption: [Average scores for the matched clean traces, with the same panel order and bootstrap procedure as @error-trajectories. Here, the horizontal axis measures distance from the matched anchor, not from an actual error.],
+) <control-trajectories>
 
-We can see the same pattern of context relevance scores dipping on the selected steps --- even though they were sampled randomly, and don't contain any errors!
+The clean traces in @control-trajectories also show a broad trough near their anchors. Fully ablated context relevance is lowest at offset zero; history-ablated context relevance is lowest at offset −1. A trough alone is therefore not specific to reasoning errors, although the error-aligned curves show a sharper drop at zero.
 
-I am not totally sure what causes this pattern in the control group. A possible explanation would be that e.g. fully ablated context relevance just tends to be slightly higher for the first and last few steps of a a reasoning trace, slightly dipping in the middle of the trace.
+The source of the control pattern remains unresolved. Step position and trace length may affect scores independently of correctness. In addition, traces too short to reach a given offset contribute nothing there, so the average at each offset can contain a different mixture of tasks and trace lengths. These plots do not isolate an error effect; a paired comparison at the matched anchor, with uncertainty estimated over trace pairs, would be more informative.
