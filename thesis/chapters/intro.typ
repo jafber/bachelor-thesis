@@ -4,20 +4,18 @@
 
 @llm:pl are still prone to reasoning errors. While the capability of @llm:pl to perform long-running tasks has improved rapidly over the past years, their reliability declines when problems require extended reasoning. On LongCoT, a benchmark of problems requiring thousands of reasoning tokens, even state-of-the-art models like GPT-5.2 and Gemini 3 Pro achieve less than 10% accuracy @motwani_longcot_2026.
 
-Reasoning errors can have consequences beyond incorrect answers. #cite(<wang_persona_2025>, form: "prose") show that fine-tuning models on examples of incorrect reasoning can induce misaligned behavior on unrelated tasks.
-
-#emph(gls("cot", first: true)) is a sequence of intermediate reasoning steps produced before a final answer. _Chain-of-thought prompting_ elicits such steps through examples in the prompt; it does not require additional model training @wei_chain--thought_2023. Analyzing this output, known as _@cot monitoring_, allows us to inspect individual steps rather than only the final answer. Step-level assessments can provide training rewards for correct reasoning @wang_math-shepherd_2024 or flag faulty and dangerous outputs during deployment @williams_how_2026.
+Many language models reason in sequences of intermediate steps called a #emph(gls("cot")), before producing a final answer @wei_chain--thought_2023. Analyzing this output, a process known as _@cot monitoring_, can give insights into how a model arrives at its answer. @cot monitors are used to provide training rewards for correct reasoning @wang_math-shepherd_2024 or for flagging dangerous outputs during deployment @williams_how_2026.
 
 Despite improvements, @cot monitors remain inaccurate on certain error detection benchmarks @zheng_processbench_2025. Furthermore, monitoring @llm:pl in deployment is a compute-intensive task, limiting real-world adoption @williams_how_2026.
 
-When generating text, @llm:pl naturally gravitate toward statements that are common from their training data. This can make a familiar answer seem plausible even when the question does not support it. _Contextual calibration_ can reduce these biases by estimating a model's preference toward particular answers before seeing the actual test input, then correcting its output probabilities accordingly.
+When generating text, @llm:pl naturally gravitate toward statements that are common from their training data @zhao_calibrate_2021. This can make a model prefer statements that look familiar, even when they are incorrect in the context of the task @cheng_neutralizing_2025. _Contextual calibration_ can reduce these biases by estimating a model's preference toward particular answers before seeing the actual test input, then correcting its output probabilities accordingly.
 
 This approach has improved performance on tasks like sentiment classification and multiple choice tests, where the model only needs to produce a few tokens to give its answer @zhao_calibrate_2021 @holtzman_surface_2021. Multi-step reasoning poses a different challenge: each step can contain many tokens and depends on both the question and the preceding reasoning. We generalize the idea of contextual calibration to this setting, asking whether it can help detect errors within a reasoning trace rather than select a short answer.
 
 #figure(
   image("../figures/contextual-relevance.png"),
   placement: auto,
-  caption: [Schematic illustration of fully ablated context relevance. We subtract each step's average log likelihood under a generic context from its average log likelihood given the question and previous steps. Step 2 incorrectly applies a discount instead of a price increase. The illustration hypothesizes that a familiar discount pattern could make this error plausible without support from the question; neither the likelihood ordering nor the proposed cause is a measured result. Step numbers are omitted from the ablated side for readability but retained during scoring.]
+  caption: [Illustration of fully ablated context relevance on a toy example. We are given an #gls("llm")-generated step-by-step solution to a maths problem. However, the generator model's bias caused it to output a wrong step. We calculate the context relevance by subtracting each step's average log likelihood under a generic context from its average log likelihood given the question and previous steps.]
 ) <intro-figure>
 
 We investigate whether contextual calibration can detect errors in reasoning traces by measuring how strongly each step is supported by the question. In mathematical terms, we are given a question $q$ and multi-step reasoning trace $s_1, s_2, dots, s_n$ and tasked with detecting whether any reasoning step contains an error. For each step $s_i$, we evaluate the difference

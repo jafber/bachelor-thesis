@@ -4,11 +4,11 @@
 
 We first describe how language models generate and score reasoning traces, then review error detection, contextual calibration, and evaluation metrics.
 
-== Autoregressive Generation and Chain of Thought
+== Autoregressive Generation
 
 Language models generate text one token at a time. Before processing text, a language model splits it into _tokens_: words, parts of words, or punctuation marks. Given an input _prompt_, the model assigns a probability to each possible next token. The model then selects a token, either by choosing the most probable one (_greedy decoding_) or by randomly sampling from the distribution. It appends the selected token to the input and repeats the process. This is called _autoregressive generation_: each new token depends on the input and the tokens already generated @jurafsky_speech_2026.
 
-Many modern @llm:pl use the _transformer architecture_. A transformer processes tokens through layers of attention mechanisms and feed-forward networks. In a causal language model, a forward pass produces a next-token probability distribution at each position. Causal masking prevents each prediction from using later tokens @jurafsky_speech_2026.
+Many modern @llm:pl are _causal models_, meaning they predict the probability of each token based on the preceding tokens in a sequence. For a given text, a forward pass produces a probability distribution over possible next tokens at each position. Causal masking prevents each prediction from using later tokens @jurafsky_speech_2026.
 
 These probabilities allow us to score existing text rather than generating new tokens. Multiplying per-token probabilities gives the probability of the complete sequence. For a sequence $x$ containing tokens $x_1, dots, x_m$ and a preceding context $c$,
 
@@ -16,15 +16,31 @@ $ P_"LM" (x | c) = product_(t=1)^m P_"LM" (x_t | c, x_(<t)), $
 
 where $x_(<t)$ denotes the tokens preceding token $x_t$, and $P_"LM"$ denotes the probability the model assigns to a given token @jurafsky_speech_2026.
 
-@cot:long refers to intermediate reasoning expressed by a language model before its final answer. Eliciting @cot improves performance on several arithmetic, commonsense, and symbolic reasoning tasks @wei_chain--thought_2023. By prompting a model to explicitly reason step-by-step, we can create a _reasoning trace_ made up of individual _reasoning steps_ from the @cot.
+== Reasoning Traces and How to Monitor Them
 
-== Monitoring Reasoning Traces
+@cot:long refers to intermediate reasoning expressed by a language model before its final answer. Eliciting @cot improves performance on several arithmetic, commonsense, and symbolic reasoning tasks @wei_chain--thought_2023. By prompting a model to explicitly reason step-by-step, we can create a _reasoning trace_ made up of individual _reasoning steps_ from the @cot.
 
 Monitoring the @cot can identify problems in a model's reasoning that might otherwise remain hidden. @cot monitors are sometimes employed to look for behavior that violates instructions or safety constraints. For example, OpenAI use alignment monitors during certain training runs and evaluations @williams_how_2026. Reasoning error monitors instead examine whether a @cot employs correct reasoning. In mathematics, these assessments can help select solutions or provide step-level rewards during reinforcement learning @wang_math-shepherd_2024. While studies have shown a correlation between incorrect reasoning and misalignment in @llm:pl @wang_persona_2025, this work evaluates mathematical, symbolic, and verbal reasoning errors, not safety violations.
 
-@prm:pl are classifiers trained to assess individual reasoning steps. Unlike outcome evaluation, which assesses the final result, @prm:pl assign scores throughout a solution. Their supervision can come from human step annotations or automatically generated labels @lightman_lets_2023 @wang_math-shepherd_2024. Unlike the methods evaluated here, these models require task-specific training.
+@cot monitors commonly fall into one of two categories:
 
-@llm judges are off-the-shelf models prompted to inspect a trace. A general-purpose @llm receives the problem and solution and is asked to identify errors, without requiring task-specific fine-tuning. Earlier evaluations found substantial difficulties in error localization @tyen_llms_2024, while ProcessBench reports stronger results for more recent critics @zheng_processbench_2025. The categories overlap: generative @prm:pl can also produce verification reasoning @khalifa_process_2025.
+- #emph[@prm:pl] are classifiers trained to assess individual reasoning steps. Unlike outcome evaluation, which assesses the final result, @prm:pl assign scores throughout a solution. Their supervision can come from human step annotations or automatically generated labels @lightman_lets_2023 @wang_math-shepherd_2024. Unlike the methods evaluated here, these models require task-specific training.
+
+- #emph[@llm judges] are off-the-shelf models prompted to inspect a trace. A general-purpose @llm receives the problem and solution and is asked to identify errors, without requiring task-specific fine-tuning. Earlier evaluations found substantial difficulties in error localization @tyen_llms_2024, while ProcessBench reports stronger results for more recent critics @zheng_processbench_2025. The categories overlap: generative @prm:pl can also produce verification reasoning @khalifa_process_2025.
+
+== How to Evaluate Discrete Predictions
+
+@cot monitors can be evaluated on two tasks: deciding whether a reasoning trace contains an error (_binary detection_) and identifying the erroneous step (_localization_). In binary detection, a trace with an error is _positive_ and a clean trace is _negative_. A true positive (TP) is an error correctly detected; a true negative (TN) is a clean trace correctly cleared. A false positive (FP) is a false alarm, and a false negative (FN) is a missed error. Binary accuracy is $("TP" + "TN") / N$, the fraction of correct decisions among $N$ traces.
+
+Accuracy alone can be misleading when one class is much more common than the other (_class prevalence_). If 90 of 100 traces are clean, a monitor that labels _every_ trace clean achieves 90% binary accuracy while missing all ten errors. Its accuracy mainly reflects how many clean traces are in the dataset, not an ability to find errors. Reporting accuracy separately for erroneous and clean traces reveals this failure. Exact localization accuracy is stricter still: it requires the annotated first-error index for an erroneous trace, or `NONE` for a clean one. A monitor can detect that a trace contains an error yet point to the wrong step, succeeding at binary detection but failing localization.
+
+The _F1 score_ focuses on detecting the positive class, here erroneous traces. It combines _precision_—the fraction of predicted errors that really are errors—with _recall_—the fraction of actual errors detected:
+
+$ op("Precision") = "TP" / ("TP" + "FP"), quad op("Recall") = "TP" / ("TP" + "FN"). $
+
+F1 is their harmonic mean: $F_1 = (2 "TP") / (2 "TP" + "FP" + "FN")$. It is high only when both precision and recall are high; unlike accuracy, it gives no credit for true negatives. _Weighted F1_ computes an F1 score for each class in turn and averages the two scores, weighting each by the number of traces in that class @jurafsky_speech_2026. Because the larger class receives more weight, weighted F1 can still be influenced by class prevalence.
+
+The _Matthews correlation coefficient_ (MCC) instead compares predictions with the true labels using all four counts, TP, TN, FP, and FN. It ranges from 1 for perfect agreement to −1 for completely reversed predictions; 0 means no correlation when the coefficient is defined. Thus it checks whether a monitor distinguishes errors from clean traces, rather than merely benefiting from a common class, and complements accuracy and F1 on imbalanced datasets @chicco_advantages_2020. Both F1 and MCC evaluate whether an error is present, not whether its step was localized correctly.
 
 == Likelihood and Contextual Calibration
 
@@ -48,14 +64,3 @@ Here, $k$ indexes candidate labels, $hat(p)_k$ is the model's probability for la
 
 Contextual calibration improved text classification, fact retrieval, and information extraction. Related likelihood-ratio methods have also been applied to multiple choice answers @holtzman_surface_2021 and token-by-token abstractive summarization @chae_mitigating_2024. Our extension concerns scoring steps in existing multi-step reasoning traces, rather than the first use of calibration for longer text.
 
-== How to Evaluate Discrete Predictions
-
-Binary error detection and exact error localization answer different questions. For binary detection, a positive trace contains an error and a negative trace is clean. True positives (TP) and true negatives (TN) are correct decisions; false positives (FP) are false alarms and false negatives (FN) are missed errors. Binary accuracy is $("TP" + "TN") / N$, where $N$ is the number of traces. Exact localization accuracy instead requires the annotated first-error index, or `NONE` for a clean trace. Predicting the wrong error location can therefore succeed in binary detection while failing localization. Reporting accuracy separately on erroneous and clean traces helps expose this distinction and the influence of class prevalence.
-
-F1 balances precision and recall for the positive class. Precision measures how often an error prediction is correct, while recall measures the fraction of erroneous traces detected:
-
-$ op("Precision") = "TP" / ("TP" + "FP"), quad op("Recall") = "TP" / ("TP" + "FN"). $
-
-Their harmonic mean is $F_1 = (2 "TP") / (2 "TP" + "FP" + "FN")$. F1 does not account for true negatives. Weighted F1 instead averages the class-specific F1 scores using each class's sample count as its weight @jurafsky_speech_2026.
-
-The Matthews correlation coefficient (MCC) measures the correlation between binary predictions and labels, incorporating all four confusion-matrix counts. Its range is −1 for perfectly inverted predictions to 1 for perfect agreement; zero indicates no correlation when the coefficient is defined. It provides a useful complement to accuracy and F1 when class proportions are uneven @chicco_advantages_2020. Like binary F1, it measures error presence rather than exact location.

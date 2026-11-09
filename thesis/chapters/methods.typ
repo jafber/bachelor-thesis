@@ -12,7 +12,7 @@ We run both methods on the same traces with the same five models. @experiment-ov
 #figure(
   image("../figures/experiment-overview.png", width: 100%),
   placement: auto,
-  caption: [The judge generates a discrete verdict; context relevance produces continuous per-step scores, which are thresholded to predict an error location or NONE. Here, $L$ denotes mean token log likelihood. Scores, threshold and judge response are schematic, not measured results. The final answer is treated as Step 3. The diagram thresholds raw CR; our implementation equivalently thresholds negative CR with the inequality reversed, including equality. Red highlights the reference error, which is not supplied to either method.],
+  caption: [The judge generates a discrete verdict; context relevance produces continuous per-step scores, which are thresholded to predict an error location or NONE. Here, $L$ denotes mean token log likelihood. Scores, threshold and judge response are schematic, not measured results. The final answer is treated as Step 3. The diagram thresholds raw CR; our implementation equivalently thresholds negative CR with the inequality reversed, including equality. Red highlights the reference error, which is not revealed to either method.],
 ) <experiment-overview>
 
 == Benchmarks
@@ -90,9 +90,11 @@ For each model, we use the same checkpoint to generate judge responses and compu
 
 == Technical Implementation
 
-The experiment implementation and evaluation scripts are available in the repository at #link("https://github.com/jafber/bachelor-thesis")[github.com/jafber/bachelor-thesis]. Inference uses Hugging Face Transformers with bfloat16 weights; model outputs and token log likelihoods are cached in SQLite. Inference was run using two GH200 accelerators on the HPI high-performance cluster.
+The experiment implementation and evaluation scripts are available in the repository at #underline(link("https://github.com/jafber/bachelor-thesis")[github.com/jafber/bachelor-thesis]). Inference uses Hugging Face Transformers with bfloat16 weights; model outputs and token log likelihoods are cached in SQLite. Inference was run using two GH200 accelerators on the HPI high-performance cluster.
 
 == LLM Judge Experiment
+
+We evaluate whether a model can locate the first error in a complete reasoning trace, or recognize that the trace is error-free.
 
 === Setup
 
@@ -114,7 +116,7 @@ We use each model to compute the three context relevance scores outlined in @cr 
 
 === Setup
 
-For each trace with question $q$ and steps $s_1, dots, s_n$, we measure how much more likely each observed step becomes when its actual context is present. We use the same non-thinking chat-template instruction to solve the problem in numbered steps in every likelihood calculation. The generic replacement question is the fixed string `A reasoning problem.`; it supplies a minimal domain cue without revealing the particular problem. The model scores the *given* trace by teacher forcing, rather than generating a fresh solution.
+For each trace with question $q$ and steps $s_1, dots, s_n$, we measure how much more likely each observed step becomes when its actual context is present. We use the same non-thinking chat-template instruction to solve the problem in numbered steps in every likelihood calculation. The generic replacement question is the fixed string `A reasoning problem.`. The model scores the *given* trace, rather than generating a fresh solution.
 
 We evaluate four context configurations. In the full configuration the model sees $q$ followed by the entire trace; in the question-ablated configuration it sees the generic question followed by the entire trace. In the history-ablated configuration it sees $q$ followed by each step in isolation; in the fully ablated configuration it sees the generic question followed by each step in isolation. The latter two configurations require a separate likelihood evaluation for every step. The scoring target is always the text of the step itself, not the question, chat template, or earlier steps. The step's own number is included consistently in each context. We preserve the benchmark's step boundaries throughout.
 

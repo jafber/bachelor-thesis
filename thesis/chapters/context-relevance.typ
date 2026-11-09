@@ -20,33 +20,38 @@ Step 2: Discount shirt: $100 - $20 = $80
 Answer: $80
 ```
 
-Step 2 decreases the price instead of increasing it. An @llm might favor this continuation because discount calculations are familiar. If the question's explicit price increase makes the step less likely than under a generic context, its context relevance will be negative. This is a hypothetical mechanism, not evidence about the model's training data or the cause of a particular error.
+Step 2 incorrectly decreases the price instead of increasing it. Still, an @llm might favor this step because applying a discount to a clothing item is a familiar concept from the training data. If the question's explicit price increase makes the step less likely than under a generic context, its context relevance will be negative.
 
-To compare different sources of information, we use a generic question $q_g$, here `A reasoning problem.`, as a minimal domain cue. All variants retain the same task instructions and score the same observed step. Ablation means replacing the question or omitting preceding steps, not changing model weights.
+We can calculate different context relevance scores to find out which pieces of context influence an @llm's decision to take a given reasoning step. To compare different sources of information, we use a generic question $q_g$, here `A reasoning problem.`, as a minimal domain cue. 
 
-Fully ablated context relevance measures the combined contribution of question and history. Its baseline contains neither the actual question nor previous steps:
+=== Fully Ablated Context Relevance
+
+_Fully ablated context relevance_ measures the combined contribution of question and history. Its baseline contains neither the actual question nor previous steps:
 
 $ op("CR")_"fully ablated" (i) = L(s_i | q, s_(<i)) - L(s_i | q_g). $
 
-Intuitively, this asks: does the step fit this particular solution better than a generic reasoning problem? A positive score means that the full context increases the step's average log likelihood. A score near zero means that removing the context changes it little; a negative score means that removing the context makes the step more likely.
+Intuitively, this asks: does the step fit this particular question better than a generic reasoning problem? A positive score means that the full context increases the step's average log likelihood. A score near zero means that removing the context changes it little; a negative score means that removing the context makes the step more likely.
 
-Question-ablated context relevance measures what the question adds beyond the history. We replace the question while retaining all previous steps:
+=== Question-Ablated Context Relevance
+
+_Question-ablated context relevance_ measures what the question adds beyond the history. We replace the question while retaining all previous steps:
 
 $ op("CR")_"question ablated" (i) = L(s_i | q, s_(<i)) - L(s_i | q_g, s_(<i)). $
 
 This asks whether the original problem still provides useful information once the preceding reasoning is available. However, earlier steps may repeat the problem's premises. A low score can therefore reflect redundancy rather than an unsupported step: removing the question need not remove the information it supplied.
 
-History-ablated context relevance measures what earlier steps add beyond the question. Here, the baseline retains the problem but removes the preceding reasoning:
+=== History-Ablated Context Relevance
+
+_History-ablated context relevance_ measures what earlier steps add beyond the question. Here, the baseline retains the problem but removes the preceding reasoning:
 
 $ op("CR")_"history ablated" (i) = L(s_i | q, s_(<i)) - L(s_i | q). $
 
 This asks whether a step becomes more plausible after the intermediate work leading to it. A derived result may benefit strongly from that history, whereas a restatement of the problem may not. Conversely, a step following an earlier mistake can be highly predictable from the erroneous history. History dependence is thus not equivalent to correctness.
 
-Context relevance is a model-based contrast, not a logical proof. Positive scores indicate increased mean log likelihood under full context; zero and negative scores indicate no increase or a decrease. With identical target tokenization and length, the difference equals a length-normalized log probability ratio. Otherwise, it compares separately normalized likelihoods. The variants are inspired by the likelihood-ratio scoring used for multiple choice answers by #cite(<holtzman_surface_2021>, form: "prose"), but we apply them to observed reasoning steps rather than alternative answers. The fully ablated score is not the sum of the other two. Scoring requires no additional model training, although converting these signals into classifiers introduces a separate threshold-selection problem.
+== How We Measure the Relationship Between Context Relevance and Reasoning Correctness
 
-== Continuous Scores and Decision Thresholds
+Context relevance gives each reasoning step a continuous score, not a verdict of "correct" or "incorrect." To see whether the score is associated with reasoning errors, we compare it with labeled steps: does a step annotated as the first error tend to have lower context relevance than other steps? We can express this as _error evidence_ by reversing the score, so that higher evidence means lower context relevance. 
 
-Ranking quality measures whether a signal separates first errors from other steps. We orient scores so that larger values indicate stronger error evidence: $e_i = -op("CR")(i)$, or perplexity for the likelihood-only baseline. The receiver operating characteristic (ROC) curve plots the fraction of positives flagged against the fraction of negatives incorrectly flagged as a decision threshold varies. These are the true-positive and false-positive rates. The area under this curve (AUROC) equals the probability that a randomly selected positive receives greater evidence than a randomly selected negative, with half credit for ties. A value of 0.5 indicates chance ranking and 1 perfect separation @fawcett_introduction_2006. Here, positives are annotated first-error steps. Later steps are not necessarily verified as correct, so counting them as negatives limits this interpretation.
+The _area under the receiver operating characteristic curve_ (AUROC) summarizes how well that evidence ranks steps. Intuitively, it is the chance that a randomly chosen annotated first error receives stronger error evidence than a randomly chosen other step, counting a tie as half a success. An AUROC of 0.5 means the scores rank these pairs no better than chance; 1 means every pair is ranked correctly @fawcett_introduction_2006. While AUROC signals correlation, it does not establish that low context relevance _causes_ errors.
 
-A threshold turns continuous evidence into a discrete prediction. A step is flagged when $e_i >= tau$. Lowering $tau$ can catch more errors at the cost of more false alarms. Our trace-level rule selects the highest-evidence step, breaking ties in favor of the earliest, and returns it only if its evidence reaches the threshold; otherwise it returns `NONE`. Good pooled step ranking does not guarantee that this candidate is the first error within a trace. Thresholds should be selected on validation data and evaluated on separate test data; fitting and evaluating on the same traces gives an optimistic in-sample result. A difference between pooled score distributions likewise need not yield useful localization accuracy.
-
+To turn a continuous signal like context relevance a discrete prediction, we can set a _threshold_: flag a step when its error evidence exceeds a chosen cutoff. A lower cutoff finds more potential errors but also risks more false alarms. For a whole trace, the monitor can propose the step with the strongest evidence, and return that step if it clears the cutoff or `NONE` otherwise. We can choose a cutoff to favor a particular goal, such as maximizing exact localization accuracy, which requires both detecting an error and identifying the right step. However, strong AUROC across all steps does not guarantee accurate trace-level predictions.

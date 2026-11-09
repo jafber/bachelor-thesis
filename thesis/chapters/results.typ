@@ -54,7 +54,7 @@ For the same 300 traces, @tracking-shuffled-acc compares exact first-error-or-NO
   caption: [Exact first-error-or-NONE accuracy (%) on 300 BIG-Bench Mistake tracking-shuffled-objects traces, by model. Negative question-ablated context relevance uses a five-fold out-of-fold threshold; the LLM judge uses its cached responses. The dashed line marks the always-NONE baseline (13.3%).],
 ) <tracking-shuffled-acc>
 
-*Discussion.* The variation between tasks limits what a pooled benchmark score can tell us about a particular reasoning problem. In tracking shuffled objects, preceding swap steps may make a mistaken continuation likely given the history even when it conflicts with the original question. Keeping that history while ablating the question could isolate this discrepancy; removing both question and history does not. This is a possible mechanism, not a causal finding. The threshold is evaluated out of fold, but the task and scoring variant were selected during exploration. Independent evaluation is needed to confirm this task-specific advantage.
+*Discussion.* The variation between tasks limits what a pooled benchmark score can tell us about a particular reasoning problem. In tracking shuffled objects, preceding swap steps may make a mistaken continuation likely given the history even when it conflicts with the original question. Keeping that history while ablating the question could isolate this discrepancy. The threshold is evaluated out of fold, but the task and scoring variant were selected during exploration. Independent evaluation is needed to confirm this task-specific advantage.
 
 === Association Between Low Context Relevance and First Errors
 
@@ -65,7 +65,7 @@ For the same 300 traces, @tracking-shuffled-acc compares exact first-error-or-NO
   caption: [Pooled first-error step @auroc for negative fully ablated context relevance by benchmark and model (higher values indicate more error evidence). The dashed line marks chance ranking (0.5). Each bar label gives @auroc and the one-sided Mann–Whitney U p-value for greater error evidence at first errors; p-values are unadjusted for multiple comparisons.],
 ) <cr-bottom-line>
 
-*Discussion.* The consistent above-chance association suggests that question and history dependence carry information about first errors, but a moderate pooled @auroc does not establish reliable localization within individual traces. Only the *first* error is annotated: subsequent steps count as negatives here even if they contain further mistakes. One limitation of the significance test is that Mann–Whitney U treats reasoning steps as independent observations, although steps within a trace share context and may have correlated scores. This can affect the estimated p-values. Resampling whole traces rather than individual steps would help assess how sensitive the significance results are to this dependence. The trace-level comparison below tests whether the ranking signal is useful for localization.
+*Discussion.* Low context relevance is significantly associated with first errors across all fifteen model–benchmark combinations. However, because Mann–Whitney U treats correlated steps within a trace as independent, its p-values may be too optimistic. The trace-level comparison below tests localization directly.
 
 == Accuracy of LLM Judges
 
