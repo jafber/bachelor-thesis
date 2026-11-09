@@ -19,3 +19,6 @@ wheels/
 cache
 logs
 runs
+
+# Drawio backup files
+*.bkp
