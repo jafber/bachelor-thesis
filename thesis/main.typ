@@ -87,14 +87,14 @@
   Describe any use of generative AI tools here.
 ]
 
-#include "chapters/intro/intro.typ"
-#include "chapters/background/background.typ"
-#include "chapters/methods/methods.typ"
-#include "chapters/results/results.typ"
-#include "chapters/conclusion/conclusion.typ"
+#include "chapters/intro.typ"
+#include "chapters/background.typ"
+#include "chapters/methods.typ"
+#include "chapters/results.typ"
+#include "chapters/conclusion.typ"
 
 #bibliography("zotero.bib", style: "apa")
 
 #appendix[
-  #include "appendix/appendix.typ"
+  #include "appendix.typ"
 ]

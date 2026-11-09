@@ -110,11 +110,11 @@ This is a pretty simple one. Just pick the model we use in the following experim
 - evaluate AUROC for each of these
 - preliminary result:
 
-#image("auroc-demo.png", width: 50%)
+#image("../figures/auroc-demo.png", width: 50%)
 
 The cool thing is, we can see in the distribution of DC-PMI scores that the steps with first errors (in blue) generally have lower DC-PMI than other, correct steps (in red):
 
-#image("generic-histogram-demo.png")
+#image("../figures/generic-histogram-demo.png")
 
 === Does this effect hold up for different models?
 
@@ -144,15 +144,15 @@ The different scores we compute for a given step $s_i$ are:
 
 We can see a pattern that DC-PMI usually dips on the first error step (See "Generic domain" chart)
 
-#image("trajectories-demo.png")
+#image("../figures/trajectories-demo.png")
 
 This becomes clearer when we take the "derivative" (or more exactly the first difference):
 
-#image("first-difference-demo.png")
+#image("../figures/first-difference-demo.png")
 
 Interesting pattern! We can see that both the generic DC-PMI and history contribution shoot up one step _after_ the reasoning error. This becomes clearer when we shift the graph one step to the left:
 
-#image("first-difference-shift-demo.png")
+#image("../figures/first-difference-shift-demo.png")
 
 _Why does this happen?_ Good question. A first intition, at least for the history contribution, would be that the error step "throws us off the right path". The step after the error only follows from the previous reasoning trace $s_(<i)$ but strays from the original question $q$. Not sure why the generic domain DC-PMI rises as well.
 
@@ -162,7 +162,7 @@ Three downsides:
 2. This also means we can only catch errors when they happen before the last step
 3. The AUROC for detecting wrong steps is actually worse than with just the generic DC-PMI (0.656 vs. the 0.696 from the AUROC chart above)
 
-#image("shifted-increase-auroc-demo.png", width: 50%)
+#image("../figures/shifted-increase-auroc-demo.png", width: 50%)
 
 *TLDR: This experiment was kind of a dead end. Interesting charts, but they don't actually help us answer the original research question.*
 
