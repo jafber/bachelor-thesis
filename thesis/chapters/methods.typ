@@ -84,7 +84,9 @@ This quantity is referred to as “F1” in the ProcessBench paper, but it is *n
 
 == Models
 
-We use the Qwen3.5 4B, 9B, and 27B models @qwen_team_qwen35_2026. This range allows us to compare a performance across model sizes while remaining feasible on the available compute. For the @llm judge evaluations, we run the models in non-thinking mode. However, Qwen3.5 also offers thinking generation, allowing for further evaluations in the future (see @thinking). The same pretrained model supplies the the error prediction in the judge experiment, and the step likelihoods in the context relevance experiment.
+We use five models: Qwen3.5-4B, Qwen3.5-9B, and Qwen3.5-27B @qwen_team_qwen35_2026, as well as Meta's Llama-3.1-8B-Instruct and Llama-3.2-3B-Instruct. We refer to the latter two as Llama3.1-8B and Llama3.2-3B. The Qwen models allow us to compare performance across model sizes, while the Llama models test whether the context relevance signal also holds for a different model family. All five fit within the available compute budget.
+
+For each model, we use the same checkpoint to generate judge responses and compute step likelihoods, without task-specific fine-tuning. We disable thinking mode for Qwen3.5 to obtain direct judge responses; the Llama instruction models do not use this Qwen-specific mode. Our separate attempts to evaluate Qwen judges in thinking mode are discussed in @thinking.
 
 == Technical Implementation
 
@@ -96,19 +98,17 @@ As a baseline for the models' error detection abilities, we evaluate their perfo
 
 === Setup
 
-For every trace, we give the judge a zero-shot prompt containing the problem and the complete, numbered reasoning trace. The model ist tasked with outputting exactly one line, `FINAL: NONE` if the trace is fully correct or `FINAL: N` for the first erroneous Step N. Numbering starts at one for every benchmark, independent of how the released annotations encode indices. To keep performance comparable across datasets, we do not use benchmark-specific prompts or few-shot examples.
+For every trace, we give the judge a zero-shot prompt containing the problem and the complete, numbered reasoning trace. The model is tasked with outputting exactly one line, `FINAL: NONE` if the trace is fully correct or `FINAL: N` for the first erroneous Step N. Numbering starts at one for every benchmark, independent of how the released annotations encode indices. To keep performance comparable across datasets, we do not use benchmark-specific prompts or few-shot examples.
 
 === Output Evaluation
 
-We generate one response for every trace and parse its final line case-insensitively. Only `FINAL: NONE` or an integer referring to an existing numbered step is a valid prediction. A missing final line, an out-of-range step, or any other unparseable response is counted as invalid. For an erroneous trace, success requires the annotated first error exactly; a later error is a miss. For a clean trace, only NONE is correct. We compute performance metrics on valid outputs only, reporting the number of invalid outputs separately.
+We generate one response for every trace and parse its final line case-insensitively. Only `FINAL: NONE` or an integer referring to an existing numbered step is a valid prediction. A missing final line, an out-of-range step, or any other unparseable response is counted as invalid. For an erroneous trace, success requires the annotated first error exactly; a later error is a miss. For a clean trace, only NONE is correct. Invalid outputs count as wrong in exact-match scoring and remain in the denominator. For binary @mcc, we count an invalid output as a false alarm on a clean trace and a missed error on an erroneous trace. We also record the number of invalid outputs separately.
 
 === Metrics <metrics>
 
-// TODO: rework this after finishing background. We want to give our reasoning "Why did we choose this method?" here.
+Our primary measure is exact first-error-or-NONE accuracy, since both methods must locate the first error or identify a clean trace. We also report accuracy separately on erroneous and clean traces to distinguish localization failures from false alarms.
 
-Our primary measure is exact-match accuracy over all traces: the fraction whose predicted location or NONE equals the annotation. To expose class imbalance and different failure modes, we also report $A_"error"$ and $A_"correct"$ as defined above. In particular, a judge that always returns NONE has zero error-only accuracy regardless of its overall accuracy on a clean-heavy dataset.
-
-For ProcessBench we report the harmonic mean of these two conditional accuracies by split. For MR-GSM8K we additionally evaluate whether the judge detects the *presence* of a process error, ignoring its position, using @mcc. @mcc accounts for all four cells of the binary confusion matrix and is informative when error prevalence is uneven. An erroneous location still counts as detection in this binary measure but not as successful localization. These distinct measures must not be read interchangeably. Invalid outputs count as errors in exact-match scoring and are penalized rather than treated as clean predictions in the all-trace binary comparison.
+For comparison with published results, we use each benchmark's main reported measure: binary process-error @mcc for MR-GSM8K, the unweighted mean of exact-match accuracies across the five BIG-Bench Mistake tasks, and the mean of the four task-specific clean/error harmonic means for ProcessBench. These comparisons provide context rather than controlled replications, since our prompts and evaluation protocols differ from those of the benchmark papers.
 
 == Context Relevance Experiment
 
@@ -122,21 +122,21 @@ We evaluate four context configurations. In the full configuration the model see
 
 === Output Evaluation
 
-For context $c$, let $L(s_i | c)$ be the *mean token log likelihood* of step $s_i$ under that context. Averaging within each configuration reduces dependence on step length and allows for tokenization differences induced by the preceding text. We subtract the ablated score from the full-context score to obtain the three variants introduced in @cr:
-
-$ op("CR")_"fully ablated"(i) = L(s_i | q, s_(<i)) - L(s_i | q_g), $
-$ op("CR")_"question ablated"(i) = L(s_i | q, s_(<i)) - L(s_i | q_g, s_(<i)), $
-$ op("CR")_"history ablated"(i) = L(s_i | q, s_(<i)) - L(s_i | q). $
-
-Here $q_g$ is the generic question. A high difference means that the omitted information increases the model's preference for the step; a low difference is treated as potential evidence of an unsupported step. The question-ablated variant isolates the contribution of the actual question given the same history, whereas the history-ablated variant isolates the contribution of earlier steps given the same question. The fully ablated variant removes both. These scores reflect model likelihood, not a proof that a step logically follows from its premises. As a likelihood-only baseline we also compute full-context perplexity from the mean token log likelihood: higher perplexity indicates a less expected step.
+We average the token log likelihoods within each step and context configuration, then compute the three context relevance variants defined in @cr. This normalization reduces dependence on step length. We use negative context relevance as error evidence, so larger values consistently indicate a more suspicious step. Full-context perplexity serves as a baseline to test whether calibration adds information beyond a step simply being unexpected.
 
 === Metrics
 
-// TODO: see above
+We report step-level @auroc to assess whether each signal ranks first errors above other steps without choosing a decision threshold. We pool steps both by benchmark and by task to distinguish overall performance from task-specific differences. Exactly the annotated first error is positive; all other steps are negative. This includes later steps, which are not independently verified and may contain further errors.
 
-For step-level analysis, we label exactly the annotated first erroneous step positive and every other step negative, including steps after the first error. We pool steps within each benchmark task and report @auroc using *negative* context relevance as error evidence: 0.5 corresponds to chance ranking and 1 to perfect separation. The one-sided Mann–Whitney U test asks whether error evidence is greater for first-error steps than for other steps. We report its p-value by task; it tests a directional difference in score distributions, not whether any individual prediction is correct. Since later steps are not necessarily independently verified by the annotations, treating them as negative is a limitation of this step-level analysis.
+For fully ablated context relevance, we also report one-sided Mann–Whitney U p-values by model and benchmark to test whether first errors receive greater error evidence. These p-values are unadjusted for multiple comparisons. The test measures an association, not localization accuracy; we evaluate the latter separately below.
 
-We also evaluate a trace-level localization rule: choose the step with the smallest contextual-relevance score as the candidate first error, breaking ties in favor of the earliest step. On erroneous traces, the fraction for which this candidate matches the annotated first error measures *localization conditional on predicting an error* and requires no threshold. To allow a NONE prediction, we compare the candidate's error-evidence score to a threshold and return NONE when it falls below that threshold. We report exact first-error-or-NONE accuracy over all traces for this thresholded classifier, using the same traces and labels as in the judge comparison. Thresholds in the current analysis are optimized separately by model, benchmark, and metric on the evaluation traces themselves; the resulting accuracy is therefore an optimistic *in-sample* comparison, not a cross-validated or held-out estimate. We keep it distinct from the threshold-free localization accuracy and @auroc, neither of which requires fitting a decision threshold.
+== Comparing LLM Judges and Context Relevance as Error Predictors <comparison-methods>
 
-== Comparing LLM Judges and Context Relevance as Error Predictors<comparison-methods>
+To compare the two methods directly, we use the same traces and annotations for each model. We exclude one unusually long BIG-Bench Mistake Dyck-language trace (UID 52) from all evaluations because it caused memory issues, leaving 8,584 traces. We use fully ablated context relevance for the main comparison because it measures the combined contribution of the question and reasoning history.
+
+We first compare localization on erroneous traces only. Context relevance selects the lowest-scoring step, breaking ties in favor of the earliest step, as described in @cr. The judge supplies its predicted location. We measure how often each prediction matches the annotated first error. No threshold is needed for this comparison: context relevance always selects a step, while a judge response of NONE or an invalid response counts as wrong.
+
+We then compare exact first-error-or-NONE accuracy on all traces, pooling tasks within each benchmark. To allow the context relevance classifier to return NONE, we tune a threshold on the candidate step's negative context relevance. We search the observed evidence values, together with cutoffs allowing all or no candidates to be flagged, and choose the threshold that maximizes exact-match accuracy. Thresholds are fitted separately for each model and benchmark on the same traces used for evaluation. This gives an optimistic _in-sample_ result, not a held-out estimate. Judge predictions are not tuned against the labels. The always-NONE accuracy provides a baseline for how much can be achieved by identifying no errors at all.
+
+For the tracking-shuffled-objects task, we additionally compare question-ablated context relevance with the judges on all 300 traces. Here, we use five-fold out-of-fold threshold tuning: folds are shuffled with random seed 42 and stratified by whether a trace contains an error. For each model, we choose the threshold on four folds and predict the remaining fold, then compute exact-match accuracy over all held-out predictions. This keeps each trace's label out of its own threshold selection. However, the task and scoring variant were examined during exploratory analysis, so this comparison does not independently validate their selection or establish generalization to other tasks.
 

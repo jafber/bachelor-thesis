@@ -4,58 +4,58 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="TFBnjednuDqVJzUevqex-7" parent="1" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;perimeter=cloudPerimeter;strokeColor=#CBD5E1;" value="" vertex="1">
+        <mxCell id="TFBnjednuDqVJzUevqex-7" parent="1" style="strokeWidth=2;ellipse;shape=cloud;whiteSpace=wrap;html=1;perimeter=cloudPerimeter;strokeColor=#8172B3;" value="" vertex="1">
           <mxGeometry height="149.99" width="435" x="-30" y="135.01" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontSize=67;" value="🤖" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-10" parent="1" style="strokeWidth=2;rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontSize=67;" value="🤖" vertex="1">
           <mxGeometry height="70" width="70" x="445" y="250" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#1F2937;fontSize=23;fontStyle=1;fontFamily=Arial;" value="Compare Likelihoods" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-16" parent="1" style="strokeWidth=2;rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#1F2937;fontSize=23;fontStyle=1;fontFamily=Arial;" value="Compare Likelihoods" vertex="1">
           <mxGeometry height="38" width="280" y="300" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-20" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#334155;fontSize=19;fontStyle=1;fontFamily=Arial;" value="Full Context" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-20" parent="1" style="strokeWidth=2;rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#334155;fontSize=19;fontStyle=1;fontFamily=Arial;" value="Full Context" vertex="1">
           <mxGeometry height="35" width="290" y="355" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#334155;fontSize=19;fontStyle=1;fontFamily=Arial;" value="Ablated Context" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-21" parent="1" style="strokeWidth=2;rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#334155;fontSize=19;fontStyle=1;fontFamily=Arial;" value="Ablated Context" vertex="1">
           <mxGeometry height="35" width="290" x="390" y="355" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-4" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#CBD5E1;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(100, 116, 139);&quot;&gt;A shirt costs $100...&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: rgb(31, 41, 55);&quot;&gt;1. 20% of $100 = $20.&lt;/div&gt;" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-4" parent="1" style="strokeWidth=2;rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#4C72B0;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(55, 65, 81);&quot;&gt;A shirt costs $100...&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: rgb(31, 41, 55);&quot;&gt;1. 20% of $100 = $20.&lt;/div&gt;" vertex="1">
           <mxGeometry height="70" width="330" y="408" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-2" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#CBD5E1;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: #64748B;&quot;&gt;A reasoning problem.&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: #1F2937;&quot;&gt;20% of $100 = $20.&lt;/div&gt;" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-2" parent="1" style="strokeWidth=2;rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#4C72B0;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: #374151;&quot;&gt;A reasoning problem.&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: #1F2937;&quot;&gt;20% of $100 = $20.&lt;/div&gt;" vertex="1">
           <mxGeometry height="70" width="310" x="390" y="408" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#167347;fontSize=48;fontStyle=1;fontFamily=Arial;" value="&lt;font&gt;&amp;gt;&lt;/font&gt;" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-11" parent="1" style="strokeWidth=2;rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#347747;fontSize=48;fontStyle=1;fontFamily=Arial;" value="&lt;font&gt;&amp;gt;&lt;/font&gt;" vertex="1">
           <mxGeometry height="65" width="60" x="330" y="416" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#167347;fontSize=18;fontStyle=1;fontFamily=Arial;" value="High Context Relevance&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(22, 115, 71), rgb(98, 178, 140));&quot;&gt;✅&amp;nbsp;&lt;/span&gt;" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-14" parent="1" style="strokeWidth=2;rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#347747;fontSize=18;fontStyle=1;fontFamily=Arial;" value="High Context Relevance&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(52, 119, 71), rgb(98, 178, 140));&quot;&gt;✅&amp;nbsp;&lt;/span&gt;" vertex="1">
           <mxGeometry height="65" width="255" x="720" y="410.5" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-5" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#CBD5E1;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(100, 116, 139);&quot;&gt;A shirt costs $100...&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: rgb(100, 116, 139);&quot;&gt;1. 20% of $100 = $20.&lt;/div&gt;&lt;div style=&quot;color: rgb(31, 41, 55);&quot;&gt;2. Discount shirt: $100 - $20 = $80.&lt;/div&gt;" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-5" parent="1" style="strokeWidth=2;rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#4C72B0;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(55, 65, 81);&quot;&gt;A shirt costs $100...&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: rgb(55, 65, 81);&quot;&gt;1. 20% of $100 = $20.&lt;/div&gt;&lt;div style=&quot;color: rgb(31, 41, 55);&quot;&gt;2. Discount shirt: $100 - $20 = $80.&lt;/div&gt;" vertex="1">
           <mxGeometry height="90" width="330" y="498" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-3" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#CBD5E1;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(100, 116, 139);&quot;&gt;A reasoning problem.&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: rgb(31, 41, 55);&quot;&gt;Discount shirt: $100 - $20 = $80.&lt;/div&gt;" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-3" parent="1" style="strokeWidth=2;rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacing=12;strokeColor=#4C72B0;fillColor=#FFFFFF;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(55, 65, 81);&quot;&gt;A reasoning problem.&lt;/div&gt;&lt;div style=&quot;margin-top: 7px; color: rgb(31, 41, 55);&quot;&gt;Discount shirt: $100 - $20 = $80.&lt;/div&gt;" vertex="1">
           <mxGeometry height="90" width="310" x="390" y="498" as="geometry" />
         </mxCell>
-        <mxCell id="QlgaVXCG3bbEFCNu-pIr-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#A35D12;fontSize=18;fontStyle=1;fontFamily=Arial;" value="Low Context Relevance ⚠️&amp;nbsp;" vertex="1">
+        <mxCell id="QlgaVXCG3bbEFCNu-pIr-15" parent="1" style="strokeWidth=2;rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#A65A2E;fontSize=18;fontStyle=1;fontFamily=Arial;" value="Low Context Relevance ⚠️&amp;nbsp;" vertex="1">
           <mxGeometry height="65" width="255" x="720" y="510.5" as="geometry" />
         </mxCell>
-        <mxCell id="rluhV-FECXLYnHbDEWyv-3" parent="1" style="shape=callout;whiteSpace=wrap;html=1;perimeter=calloutPerimeter;rounded=1;roundedPerimeter=1;strokeColor=#CBD5E1;fillColor=#F8FAFC;position2=0;size=32;position=0.05;base=22;fontSize=19;spacing=14;" value="&lt;div style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;1. 20% of $100 = $20.&lt;/div&gt;&lt;div style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;&lt;b style=&quot;color: rgb(197, 48, 48);&quot;&gt;2. Discount shirt: $100 - $20 = $80.&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;Answer: $80&lt;/div&gt;" vertex="1">
+        <mxCell id="rluhV-FECXLYnHbDEWyv-3" parent="1" style="strokeWidth=2;shape=callout;whiteSpace=wrap;html=1;perimeter=calloutPerimeter;rounded=1;roundedPerimeter=1;strokeColor=#4C72B0;fillColor=#F8FAFC;position2=0;size=32;position=0.05;base=22;fontSize=19;spacing=14;" value="&lt;div style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;1. 20% of $100 = $20.&lt;/div&gt;&lt;div style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;&lt;b style=&quot;color: rgb(196, 78, 82);&quot;&gt;2. Discount shirt: $100 - $20 = $80.&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;color: rgb(31, 41, 55); font-family: Arial; font-size: 19px; text-align: left;&quot;&gt;Answer: $80&lt;/div&gt;" vertex="1">
           <mxGeometry height="125" width="425" x="535" y="135.01" as="geometry" />
         </mxCell>
-        <mxCell id="7Q65Zz7klpRtTicBYniu-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#A35D12;fontSize=48;fontStyle=1;fontFamily=Arial;" value="&lt;font&gt;≈&lt;/font&gt;" vertex="1">
+        <mxCell id="7Q65Zz7klpRtTicBYniu-5" parent="1" style="strokeWidth=2;rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;strokeColor=none;fillColor=none;fontColor=#A65A2E;fontSize=48;fontStyle=1;fontFamily=Arial;" value="&lt;font&gt;≈&lt;/font&gt;" vertex="1">
           <mxGeometry height="65" width="60" x="330" y="510.5" as="geometry" />
         </mxCell>
-        <mxCell id="TFBnjednuDqVJzUevqex-5" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=12;strokeColor=none;fillColor=none;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(100, 116, 139);&quot;&gt;&lt;b style=&quot;font-style: italic;&quot;&gt;Training data bias:&lt;/b&gt;&lt;span style=&quot;font-style: italic;&quot;&gt; clothing items often have a discount applied to them&lt;/span&gt;&lt;/div&gt;" vertex="1">
+        <mxCell id="TFBnjednuDqVJzUevqex-5" parent="1" style="strokeWidth=2;rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=12;strokeColor=none;fillColor=none;fontColor=#1F2937;fontSize=19;fontFamily=Arial;" value="&lt;div style=&quot;color: rgb(55, 65, 81);&quot;&gt;&lt;b style=&quot;font-style: italic;&quot;&gt;Training data bias:&lt;/b&gt;&lt;span style=&quot;font-style: italic;&quot;&gt; clothing items often have a discount applied to them&lt;/span&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="95.75" width="340" x="20" y="161.25" as="geometry" />
         </mxCell>
-        <mxCell id="TFBnjednuDqVJzUevqex-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;shapeInside=1;aspect=fixed;strokeColor=#CBD5E1;" value="" vertex="1">
+        <mxCell id="TFBnjednuDqVJzUevqex-8" parent="1" style="strokeWidth=2;ellipse;whiteSpace=wrap;html=1;shapeInside=1;aspect=fixed;strokeColor=#8172B3;" value="" vertex="1">
           <mxGeometry height="38" width="38" x="374" y="178.51" as="geometry" />
         </mxCell>
-        <mxCell id="TFBnjednuDqVJzUevqex-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;shapeInside=1;aspect=fixed;strokeColor=#CBD5E1;" value="" vertex="1">
+        <mxCell id="TFBnjednuDqVJzUevqex-9" parent="1" style="strokeWidth=2;ellipse;whiteSpace=wrap;html=1;shapeInside=1;aspect=fixed;strokeColor=#8172B3;" value="" vertex="1">
           <mxGeometry height="20" width="20" x="425" y="209" as="geometry" />
         </mxCell>
-        <mxCell id="TFBnjednuDqVJzUevqex-11" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=12;strokeColor=#CBD5E1;fillColor=#F8FAFC;fontColor=#000000;fontSize=19;fontFamily=Arial;" value="&lt;div&gt;&lt;i&gt;A shirt costs $100. Its price increases by 20%. What is the new price?&lt;/i&gt;&lt;/div&gt;" vertex="1">
+        <mxCell id="TFBnjednuDqVJzUevqex-11" parent="1" style="strokeWidth=2;rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;spacing=12;strokeColor=#4C72B0;fillColor=#F8FAFC;fontColor=#000000;fontSize=19;fontFamily=Arial;" value="&lt;div&gt;&lt;i&gt;A shirt costs $100. Its price increases by 20%. What is the new price?&lt;/i&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="65" width="960" y="50" as="geometry" />
         </mxCell>
       </root>

@@ -51,8 +51,8 @@
 #register-glossary(abbreviations)
 
 #show: project.with(
-  title: "Does the Question Support This Reasoning Step?",
-  subtitle: "Detecting Reasoning Errors with Contextual Calibration",
+  title: "Does the Question Support This Reasoning Step? Detecting Reasoning Errors with Contextual Calibration",
+  header-title: "Does the Question Support This Reasoning Step?",
   translation: "Folgt der Rechenschritt aus der Frage? Erkennung von Denkfehlern durch kontextuelle Kalibrierung",
   signature: image("figures/signature.png", width: 4cm),
   name: "Jan Berndt",
@@ -101,6 +101,7 @@
 
 #include "chapters/intro.typ"
 #include "chapters/background.typ"
+#include "chapters/context-relevance.typ"
 #include "chapters/methods.typ"
 #include "chapters/results.typ"
 #include "chapters/conclusion.typ"

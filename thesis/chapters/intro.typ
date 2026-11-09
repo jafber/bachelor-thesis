@@ -10,11 +10,9 @@ Reasoning is essential for reliable and safe agents across domains including mat
 
 Despite improvements, @cot monitors remain inaccurate on certain error detection benchmarks @zheng_processbench_2025. Furthermore, monitoring @llm:pl in deployment is a compute intensive task, limiting real-world adoption @williams_how_2026.
 
-#emph(gls("nli", first: true)), also called _textual entailment_, describes whether one piece of text is logically implied by another piece of text. For example, the sentence "A dog is running in the park" entails "An animal is running in the park" since a dog is an animal. The ability to assess textual entailment is a fundamental task in reasoning.
+When generating text, @llm:pl naturally gravitate toward statements that are common from their training data. This can make a familiar answer seem plausible even when the question does not support it. _Contextual calibration_ can reduce these biases by estimating a model's preference toward particular answers before seeing the actual test input, then correcting its output probabilities accordingly.
 
-Reliance on prior biases is a common mistake in @nli. When generating text, @llm:pl naturally gravitate toward statements that are common from their training data. This makes them prone to _attestation bias_: when judging textual entailment, models favor claims that seem familiar even when the given premises do not support them @cheng_neutralizing_2025.
-
-_Contextual calibration_ can reduce biases in @llm:pl by estimating a model's preference toward particular answers before seeing the actual test input, then correcting its output probabilities accordingly. Variations of this method have been shown to improve performance in a wide range of tasks that require models to give short, verifiable answers, including sentiment classification, multiple choice tests, and @nli @zhao_calibrate_2021 @holtzman_surface_2021. To the best of our knowledge, whether this method can also be used to improve performance on multi-step reasoning tasks remains an open research question.
+This approach has improved performance on tasks like sentiment classification and multiple choice tests, where the model only needs to produce a few tokens to give its answer @zhao_calibrate_2021 @holtzman_surface_2021. Multi-step reasoning poses a different challenge: each step can contain many tokens and depends on both the question and the preceding reasoning. We generalize the idea of contextual calibration to this setting, asking whether it can help detect errors within a reasoning trace rather than select a short answer.
 
 #figure(
   image("../figures/contextual-relevance.png"),
@@ -22,18 +20,18 @@ _Contextual calibration_ can reduce biases in @llm:pl by estimating a model's pr
   caption: [Per-step fully ablated context relevance on an example reasoning trace that contains an error. For each step, we evaluate its average log likelihood given the full question and previous steps. To calculate context relevance, we subtract the average log likelihood for the step given only a generic context like "A reasoning problem". In the example, the second reasoning step results from the @llm's internal bias instead of following from the question. This gives the step a low context relevance, signaling the reasoning error.]
 ) <intro-figure>
 
-We investigate whether contextual calibration can detect errors in reasoning traces by measuring how strongly each step is supported by the question. In mathematical terms, we are given a question $q$ and multi-step reasoning trace $s_1, s_2, dots, s_n$ and tasked with detecting whether any reasoning step contains an error. For each step $s_i$, we evaluate the ratio
+We investigate whether contextual calibration can detect errors in reasoning traces by measuring how strongly each step is supported by the question. In mathematical terms, we are given a question $q$ and multi-step reasoning trace $s_1, s_2, dots, s_n$ and tasked with detecting whether any reasoning step contains an error. For each step $s_i$, we evaluate the difference
 
-$ text("CR")_i = P(s_i | q, s_(<i)) / P(s_i | q_g, s_(<i)) $
+$ op("CR")_"fully ablated" (i) = L(s_i | q, s_(<i)) - L(s_i | q_g), $
 
-where $P$ is the likelihood the @llm assigns to a given input. We call this ratio _contextual relevance_. Low contextual relevance may signal incorrect reasoning steps that only result from internal biases instead of logically following from the question.
+where $L$ is the average token log likelihood assigned by the @llm, $s_(<i)$ denotes the preceding steps, and $q_g$ is a generic prompt such as "A reasoning problem." We call this difference _fully ablated context relevance_: its baseline contains neither the actual question nor the previous steps. Low context relevance may signal incorrect reasoning steps that seem plausible because of internal biases rather than support from the problem and reasoning history.
 
 Our work makes three main research contributions:
 
-+ We introduce _contextual relevance_ as a new method for detecting errors in reasoning traces. We evaluate its performance on three error-detection benchmarks, establishing a statistically significant correllation between low contextual relevance and reasoning errors.
++ We introduce _context relevance_ as a new method for detecting errors in reasoning traces. We evaluate its performance on three error-detection benchmarks, establishing a statistically significant correlation between low contextual relevance and reasoning errors.
 
 + We evaluate the existing error detection capabilities of state-of-the-art @llm:pl, achieving strong benchmark performance. This supports the strong error-detection capabilities reported by #cite(<zheng_processbench_2025>, form: "prose") while updating the picture presented by earlier studies @zeng_mr-gsm8k_2023 @tyen_llms_2024.
 
-+ We compare or context-relevance-based error classifier with @llm judges: while our classifier outperforms the @llm judges on one benchmark category involving tracking shuffled objects, @llm judges generally perform better across the evaluated benchmarks.
++ We compare our context-relevance-based error classifier with @llm judges: while our classifier outperforms the @llm judges on one benchmark category involving tracking shuffled objects, @llm judges generally perform better across the evaluated benchmarks.
 
 Although its effectiveness varies across tasks, context relevance may serve as a training-free, low-compute signal for improving reasoning accuracy in @llm:pl.

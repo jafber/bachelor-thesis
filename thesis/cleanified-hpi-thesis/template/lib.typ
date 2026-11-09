@@ -101,6 +101,8 @@
 #let project(
   // The title of the thesis
   title: "",
+  // Optional shorter title for running page headers; defaults to the full title.
+  header-title: none,
   // Subtitle
   subtitle: "",
   // The translated title of the thesis
@@ -327,7 +329,7 @@
           if calc.even(here().page()) {
             text(style: "italic", name)
           } else {
-            title
+            if header-title == none { title } else { header-title }
           },
         )
       }
