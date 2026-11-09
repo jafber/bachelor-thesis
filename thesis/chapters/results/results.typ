@@ -34,7 +34,7 @@ Perplexity alone shows a positive correlation with first error steps on all benc
 
 *Discussion.* Perplexity alone is a useful error signal in most model-benchmark combinations. However, history-ablated and fully ablated context relevance provide even stronger information for detecting errors. This supports our hypothesis that context relevance scoring improves reasoning performance by removing model bias. The low performance of question ablated context relevance might be attributed to the fact that its correcting factor $L(s_i | q_g, s_(<i))$ includes substantial information about the question itself in the form of prior reasoning steps, losing a lot of information about the @llm's inherent biases.
 
-=== How does performance generalize across task domains?
+=== How does performance generalize across task domains? <task-domains>
 
 The benchmark averages hide pronounced differences between their subtasks. @task-auroc reports step-level @auroc for fully ablated context relevance, separated into all twelve task types. 
 
@@ -45,7 +45,21 @@ The benchmark averages hide pronounced differences between their subtasks. @task
 
 Fully ablated context relevance shows a robust correlation to first error steps in the mathematical reasoning tasks across all models. In more logic-based tasks, namely program of thought, dyck languages, logical deduction and word sorting, the correlation is weaker. Performance on multi-step arithmetic tasks is also relatively weak.
 
-*Discussion.* Fully ablated context relevance generally correlates with correct reasoning across task domains, but the weaker results in some logic and arithmetic tasks show that the aggregate benchmark scores do not describe every task equally well.
+The "tracking shuffled objects" task stands out. Here, the correlation switches directions: errors are consistently indicated by high, not low, fully ablated context relevance. However, @tracking-shuffled-auroc shows that question ablated context relevance is an unusually strong signal here. Within the shuffled objects task, low question ablated context relevance acheives 0.84-0.90 @auroc at detecting first error steps, as opposed to 0.33-0.40 for the fully ablated context relevance.
+
+#figure(
+  image("tracking-shuffled-objects-auroc.png", width: 100%),
+  caption: [First-error step @auroc by task, scoring method, and Qwen3.5 model. MR = MR-GSM8K; BBM = BIG-Bench Mistake; PB = ProcessBench. Each cell pools steps only within the named task. Scores below 0.5 indicate that the specified direction of the score ranks first errors behind other steps.],
+) <tracking-shuffled-auroc>
+
+We turn the question ablated context relevance scores into a binary classifier that, as described in @comparison-methods, maximizes first error detection accuracy. @tracking-shuffled-acc shows that on the shuffled objects task, our context relevance based classifier significantly outperforms @llm judges, correctly predicting the exact first error step (or NONE on clean traces) in 65% of all samples for Llama3.1-8B.
+
+#figure(
+  image("tracking-shuffled-objects-accuracy.png", width: 100%),
+  caption: [First-error step @auroc by task, scoring method, and Qwen3.5 model. MR = MR-GSM8K; BBM = BIG-Bench Mistake; PB = ProcessBench. Each cell pools steps only within the named task. Scores below 0.5 indicate that the specified direction of the score ranks first errors behind other steps.],
+) <tracking-shuffled-acc>
+
+*Discussion.* We find that fully ablated context relevance, though weaker in some logics and arithmetic settings, generally correlates with correct reasoning across task domains. One exception is the shuffled objects task, where the erroneous steps, on average, acheive a *higher* fully ablated context relevance but a significantly *lower* question ablated context relevance than other steps. A possible explanation could be logical dependance between the reasoning steps when tracking shuffled objects: the steps leading up to an error "set the model up" to make a mistake which contradicts the original question. This difference - how much prior steps instead of the original question influence a model's decision - expresses itself as low question ablated cr.
 
 === Does low context relevance correlate with reasoning errors?
 
