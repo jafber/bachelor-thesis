@@ -105,6 +105,8 @@
   subtitle: "",
   // The translated title of the thesis
   translation: "",
+  // Optional signature image for the declaration
+  signature: none,
   // The name of the student writing the thesis
   name: "",
   // Date of handing in the thesis
@@ -385,6 +387,7 @@
       columns: (1fr, 1fr),
       [],
       [
+        #if signature != none { align(center, signature) }
         #line(length: 100%, stroke: 0.5pt)
         #align(center, name)
       ],

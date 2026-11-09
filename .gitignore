@@ -19,6 +19,7 @@ wheels/
 cache
 logs
 runs
+signature.png
 
 # Drawio backup files
 *.bkp

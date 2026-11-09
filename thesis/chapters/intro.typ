@@ -20,7 +20,7 @@ _Contextual calibration_ can reduce biases in @llm:pl by estimating a model's pr
   image("../figures/contextual-relevance.png"),
   placement: auto,
   caption: [Per-step fully ablated context relevance on an example reasoning trace that contains an error. For each step, we evaluate its average log likelihood given the full question and previous steps. To calculate context relevance, we subtract the average log likelihood for the step given only a generic context like "A reasoning problem". In the example, the second reasoning step results from the @llm's internal bias instead of following from the question. This gives the step a low context relevance, signaling the reasoning error.]
-)
+) <intro-figure>
 
 We investigate whether contextual calibration can detect errors in reasoning traces by measuring how strongly each step is supported by the question. In mathematical terms, we are given a question $q$ and multi-step reasoning trace $s_1, s_2, dots, s_n$ and tasked with detecting whether any reasoning step contains an error. For each step $s_i$, we evaluate the ratio
 

@@ -53,6 +53,8 @@
 #show: project.with(
   title: "Does the Question Support This Reasoning Step?",
   subtitle: "Detecting Reasoning Errors with Contextual Calibration",
+  translation: "Folgt der Rechenschritt aus der Frage? Erkennung von Denkfehlern durch kontextuelle Kalibrierung",
+  signature: image("figures/signature.png", width: 4cm),
   name: "Jan Berndt",
   date: "9. November 2026",
   study-program: "IT-Systems Engineering",
@@ -64,16 +66,20 @@
   // typography: (font: "STIX Two Text", body-text-size: 12pt),
   // layout: (for-print: true, toc-depth: 2),
   // appearance: (accent-color: rgb("#B1063A")),
-  // labels: (declaration-city: "Berlin"),
+  labels: (
+    declaration-text: [
+      I hereby declare that I wrote this thesis independently and used only the sources and aids disclosed in this thesis, including the generative AI use described below. Material taken from other sources, whether quoted or paraphrased, is acknowledged. I have reviewed the work produced with AI assistance and take responsibility for the content, methods, results, and conclusions of this thesis.
+    ],
+  ),
 )
 
 #abstract[
   #include "abstract.typ"
 ]
 
-// #abstract-de[
-//   Dies ist eine wirklich gute Zusammenfassung.
-// ]
+#abstract-de[
+  #include "abstract-de.typ"
+]
 
 // #acknowledgements[
 //   Thanks to ...
@@ -84,7 +90,13 @@
 ]
 
 #ai-declaration[
-  Describe any use of generative AI tools here.
+  I used GPT-6 through the pi coding-agent harness for the following tasks:
+
+  - Writing code to run the experiments and generate the plots.
+  - Reformatting the illustrations @intro-figure and @experiment-overview; I created their original layouts by hand in Draw.io.
+  - Producing drafts of the background, methods, and results sections.
+  - Proofreading and improving the wording throughout the thesis.
+  - Translating the abstract into German.
 ]
 
 #include "chapters/intro.typ"

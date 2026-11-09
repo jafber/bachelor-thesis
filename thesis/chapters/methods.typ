@@ -24,7 +24,7 @@ The three error detection benchmarks we chose all follow a similar structure. Ea
     columns: (auto, auto, 1fr, auto, auto),
     align: (left, left, left, right, right),
     table.header(
-      [Benchmark], [Task name], [Description], [Samples], [Errors],
+      [*Benchmark*], [*Task name*], [*Description*], [*Samples*], [*Errors*],
     ),
 
     table.cell(rowspan: 4)[MR-GSM8K],
