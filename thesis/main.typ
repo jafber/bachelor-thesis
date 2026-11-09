@@ -80,7 +80,7 @@
 // ]
 
 #acronyms[
-  #print-glossary(abbreviations)
+  #print-glossary(abbreviations, disable-back-references: true)
 ]
 
 #ai-declaration[
